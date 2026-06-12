@@ -6,6 +6,7 @@ import 'package:method484/data/fase1.dart';
 import 'package:method484/main.dart';
 import 'package:method484/models/lesson.dart';
 import 'package:method484/screens/lesson_screen.dart';
+import 'package:method484/screens/onboarding_screen.dart';
 import 'package:method484/screens/practice_screen.dart';
 import 'package:method484/services/progress_store.dart';
 import 'package:method484/services/pronunciation_assessor.dart';
@@ -63,6 +64,28 @@ void main() {
     expect(find.text('Ouvir'), findsOneWidget);
   });
 
+  testWidgets('onboarding só libera após consentimento de voz',
+      (tester) async {
+    final store = await _emptyStore();
+    var done = false;
+    await tester.pumpWidget(MaterialApp(
+      home: OnboardingScreen(store: store, onDone: () => done = true),
+    ));
+    expect(find.textContaining('Você sabe mais inglês'), findsOneWidget);
+
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+
+    expect(store.hasVoiceConsent, isFalse);
+    await tester.ensureVisible(find.textContaining('Aceito a gravação'));
+    await tester.tap(find.textContaining('Aceito a gravação'));
+    await tester.pumpAndSettle();
+    expect(store.hasVoiceConsent, isTrue);
+    expect(done, isTrue);
+  });
+
   test('aprovação multicritério barra pronúncia aportuguesada', () {
     const lesson = Lesson(
       id: 't',
@@ -90,6 +113,19 @@ void main() {
     await store.markLessonCompleted('fase1-licao01');
     expect(store.isLessonCompleted('fase1-licao01'), isTrue);
     expect(store.isLessonCompleted('fase1-licao02'), isFalse);
+  });
+
+  test('apagar dados zera progresso e consentimento (LGPD)', () async {
+    final store = await _emptyStore();
+    await store.grantVoiceConsent();
+    await store.addApproved(const Duration(seconds: 30));
+    await store.markLessonCompleted('fase1-licao01');
+
+    await store.clearAll();
+    expect(store.hasVoiceConsent, isFalse);
+    expect(store.totalApproved, Duration.zero);
+    expect(store.isLessonCompleted('fase1-licao01'), isFalse);
+    expect(store.streakDays, 0);
   });
 
   test('progresso acumula e streak conta uma vez por dia', () async {

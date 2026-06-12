@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'screens/home_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/progress_store.dart';
 import 'services/pronunciation_assessor.dart';
 
@@ -15,25 +16,42 @@ Future<void> main() async {
   runApp(Method484App(store: store));
 }
 
-class Method484App extends StatelessWidget {
+class Method484App extends StatefulWidget {
   const Method484App({super.key, required this.store});
 
   final ProgressStore store;
 
   @override
+  State<Method484App> createState() => _Method484AppState();
+}
+
+class _Method484AppState extends State<Method484App> {
+  @override
   Widget build(BuildContext context) {
+    final Widget home;
+    if (_azureKey.isEmpty) {
+      home = const _MissingKeyScreen();
+    } else if (!widget.store.hasVoiceConsent) {
+      // LGPD: nenhuma gravação antes do consentimento do onboarding.
+      home = OnboardingScreen(
+        store: widget.store,
+        onDone: () => setState(() {}),
+      );
+    } else {
+      home = HomeScreen(
+        store: widget.store,
+        assessor: AzurePronunciationAssessor(
+          subscriptionKey: _azureKey,
+          region: _azureRegion,
+        ),
+        // Exclusão de dados derruba o consentimento → volta ao onboarding.
+        onDataCleared: () => setState(() {}),
+      );
+    }
     return MaterialApp(
       title: '484 Method',
       theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
-      home: _azureKey.isEmpty
-          ? const _MissingKeyScreen()
-          : HomeScreen(
-              store: store,
-              assessor: AzurePronunciationAssessor(
-                subscriptionKey: _azureKey,
-                region: _azureRegion,
-              ),
-            ),
+      home: home,
     );
   }
 }

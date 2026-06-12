@@ -12,6 +12,7 @@ class ProgressStore {
   static const _kStreakDays = 'streak_days';
   static const _kLastPracticeDay = 'last_practice_day';
   static const _kCompletedLessons = 'completed_lessons';
+  static const _kVoiceConsentAt = 'voice_consent_at';
 
   /// Meta do produto: 484 horas de prática aprovada.
   static const goalSeconds = 484 * 3600;
@@ -45,6 +46,15 @@ class ProgressStore {
     await _prefs.setString(_kLastPracticeDay, today);
   }
 
+  /// LGPD: gravação de voz é dado pessoal sensível — o app só pode gravar
+  /// após consentimento explícito, e a data do aceite fica registrada.
+  bool get hasVoiceConsent => _prefs.getString(_kVoiceConsentAt) != null;
+
+  Future<void> grantVoiceConsent() async {
+    await _prefs.setString(
+        _kVoiceConsentAt, DateTime.now().toIso8601String());
+  }
+
   bool isLessonCompleted(String lessonId) =>
       (_prefs.getStringList(_kCompletedLessons) ?? const [])
           .contains(lessonId);
@@ -54,6 +64,10 @@ class ProgressStore {
     if (done.contains(lessonId)) return;
     await _prefs.setStringList(_kCompletedLessons, [...done, lessonId]);
   }
+
+  /// LGPD: exclusão de todos os dados locais (progresso, streak, consentimento).
+  /// Quando houver backend, esta chamada também aciona a exclusão remota.
+  Future<void> clearAll() => _prefs.clear();
 
   String _ymd(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';

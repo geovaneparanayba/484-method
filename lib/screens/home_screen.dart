@@ -15,16 +15,46 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.store,
     required this.assessor,
+    this.onDataCleared,
   });
 
   final ProgressStore store;
   final PronunciationAssessor assessor;
+
+  /// Chamado após a exclusão de dados (o app volta ao onboarding).
+  final VoidCallback? onDataCleared;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Future<void> _confirmClearData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Apagar todos os seus dados?'),
+        content: const Text(
+            'Progresso, streak, lições concluídas e o consentimento de '
+            'gravação serão apagados deste dispositivo. Essa ação não '
+            'pode ser desfeita.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Apagar tudo'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await widget.store.clearAll();
+    widget.onDataCleared?.call();
+  }
+
   Future<void> _openLesson(Lesson lesson) async {
     await Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => LessonScreen(
@@ -50,6 +80,15 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => PracticeScreen(assessor: widget.assessor),
             )),
+          ),
+          PopupMenuButton<String>(
+            onSelected: (_) => _confirmClearData(),
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'clear',
+                child: Text('Apagar meus dados'),
+              ),
+            ],
           ),
         ],
       ),

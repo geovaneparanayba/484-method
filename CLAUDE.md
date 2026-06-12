@@ -42,6 +42,10 @@ Métrica norte do produto: **minutos de prática oral APROVADA**, nunca tempo de
   que for específico de plataforma (gravação de áudio, por exemplo) atrás de
   uma interface para trocar a implementação entre web e mobile.
 - Build Android: toolchain local funciona (`flutter build apk`), sem emulador.
+- ⚠️ Ao adicionar QUALQUER plugin novo no pubspec: rodar
+  `rm -rf .dart_tool/flutter_build` antes do próximo `flutter run -d chrome`,
+  senão o web_plugin_registrant fica desatualizado e o plugin lança
+  MissingPluginException em runtime (já causou tela branca duas vezes).
 - Build/teste iOS: via CI na nuvem (Codemagic ou GitHub Actions) + TestFlight
   no iPhone do dev. Nunca sugerir instalar Xcode nesta máquina.
 

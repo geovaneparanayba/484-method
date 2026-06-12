@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/lesson.dart';
 import '../services/audio_recorder_service.dart';
 import '../services/feedback_messages.dart';
+import '../services/progress_store.dart';
 import '../services/pronunciation_assessor.dart';
 
 /// Fluxo som-first de uma microlição (template de 8 etapas do método):
@@ -17,10 +18,14 @@ class LessonScreen extends StatefulWidget {
     super.key,
     required this.lesson,
     required this.assessor,
+    this.store,
   });
 
   final Lesson lesson;
   final PronunciationAssessor assessor;
+
+  /// Quando presente, o tempo aprovado é persistido (barra das 484h).
+  final ProgressStore? store;
 
   @override
   State<LessonScreen> createState() => _LessonScreenState();
@@ -123,6 +128,7 @@ class _LessonScreenState extends State<LessonScreen> {
         } else if (_step == _Step.livroAberto) {
           if (result.pronScore >= widget.lesson.approvalThreshold) {
             _approved += audio.duration;
+            widget.store?.addApproved(audio.duration);
           }
           _step = _Step.resultFinal;
         }
@@ -140,6 +146,7 @@ class _LessonScreenState extends State<LessonScreen> {
     setState(() {
       if (_isLastItem) {
         _step = _Step.finished;
+        widget.store?.markLessonCompleted(widget.lesson.id);
       } else {
         _index++;
         _step = _Step.listen;

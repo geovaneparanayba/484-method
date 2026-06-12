@@ -9,18 +9,26 @@ source .env
 set +a
 
 voice="en-US-JennyNeural"
-outdir="assets/audio/fase1/licao01"
-mkdir -p "$outdir"
 
-words=("banana" "cinema" "hotel" "internet" "pizza")
+gen() {
+  local licao="$1"; shift
+  local outdir="assets/audio/fase1/$licao"
+  mkdir -p "$outdir"
+  for w in "$@"; do
+    local file="$outdir/${w// /_}.mp3"
+    [[ -f "$file" ]] && { echo "já existe: $file"; continue; }
+    local ssml="<speak version='1.0' xml:lang='en-US'><voice name='$voice'><prosody rate='-10%'>$w</prosody></voice></speak>"
+    curl -sf -X POST "https://${AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1" \
+      -H "Ocp-Apim-Subscription-Key: $AZURE_SPEECH_KEY" \
+      -H "Content-Type: application/ssml+xml" \
+      -H "X-Microsoft-OutputFormat: audio-16khz-64kbitrate-mono-mp3" \
+      -H "User-Agent: method484" \
+      --data "$ssml" -o "$file"
+    echo "gerado: $file"
+  done
+}
 
-for w in "${words[@]}"; do
-  ssml="<speak version='1.0' xml:lang='en-US'><voice name='$voice'><prosody rate='-10%'>$w</prosody></voice></speak>"
-  curl -sf -X POST "https://${AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1" \
-    -H "Ocp-Apim-Subscription-Key: $AZURE_SPEECH_KEY" \
-    -H "Content-Type: application/ssml+xml" \
-    -H "X-Microsoft-OutputFormat: audio-16khz-64kbitrate-mono-mp3" \
-    -H "User-Agent: method484" \
-    --data "$ssml" -o "$outdir/$w.mp3"
-  echo "gerado: $outdir/$w.mp3"
-done
+gen licao01 "banana" "cinema" "hotel" "internet" "pizza"
+gen licao02 "app" "online" "email" "login" "video"
+gen licao03 "coffee" "burger" "sandwich" "cake" "water"
+gen licao04 "airport" "taxi" "bus" "passport" "ticket"

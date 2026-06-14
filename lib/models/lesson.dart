@@ -37,11 +37,21 @@ class Lesson {
 
   final List<LessonItem> items;
 
-  bool approves(double accuracy, double minPhonemeScore, double? prosody) {
-    if (accuracy < approvalThreshold) return false;
-    if (minPhonemeScore < minPhoneme) return false;
-    final p = minProsody;
-    if (p != null && (prosody ?? 100) < p) return false;
+  /// Pisos do "modo desafio" — bem acima dos da Fase 1, para quem quer
+  /// cobrança nativa. Sempre mais estritos que o padrão da fase.
+  static const rigorousAccuracy = 90.0;
+  static const rigorousPhoneme = 80.0;
+  static const rigorousProsody = 75.0;
+
+  bool approves(double accuracy, double minPhonemeScore, double? prosody,
+      {bool rigorous = false}) {
+    final accFloor = rigorous ? rigorousAccuracy : approvalThreshold;
+    final phonFloor = rigorous ? rigorousPhoneme : minPhoneme;
+    if (accuracy < accFloor) return false;
+    if (minPhonemeScore < phonFloor) return false;
+    // No modo rigoroso a prosódia entra mesmo nas lições sem minProsody.
+    final prosFloor = rigorous ? rigorousProsody : minProsody;
+    if (prosFloor != null && (prosody ?? 100) < prosFloor) return false;
     return true;
   }
 }

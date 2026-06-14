@@ -65,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
         assessor: widget.assessor,
         store: widget.store,
         analytics: widget.analytics,
+        rigorous: widget.store.rigorousMode,
       ),
     ));
     setState(() {}); // progresso pode ter mudado
@@ -131,6 +132,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: SwitchListTile(
+                  value: widget.store.rigorousMode,
+                  onChanged: (v) async {
+                    await widget.store.setRigorousMode(v);
+                    setState(() {});
+                  },
+                  title: const Text('Modo desafio'),
+                  subtitle: const Text(
+                      'Só aprova com pronúncia bem próxima da nativa. '
+                      'Mais difícil, para quem quer cobrança.'),
+                  secondary: const Icon(Icons.fitness_center),
                 ),
               ),
               const SizedBox(height: 16),

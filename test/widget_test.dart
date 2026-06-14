@@ -131,6 +131,17 @@ void main() {
     expect(lesson.approves(100, 100, 83.9), isTrue); // hotel nativo
   });
 
+  test('modo desafio exige pronúncia próxima da nativa', () {
+    const lesson = Lesson(
+      id: 't', title: 't', objective: 't', approvalThreshold: 75, items: [],
+    );
+    // Passa no modo normal (>=75), mas não no desafio (exige accuracy >=90).
+    expect(lesson.approves(82, 78, 90), isTrue);
+    expect(lesson.approves(82, 78, 90, rigorous: true), isFalse);
+    // Pronúncia nativa passa nos dois.
+    expect(lesson.approves(96, 92, 88, rigorous: true), isTrue);
+  });
+
   test('conclusão de lição persiste e não duplica', () async {
     final store = await _emptyStore();
     expect(store.isLessonCompleted('fase1-licao01'), isFalse);

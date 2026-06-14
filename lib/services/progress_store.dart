@@ -13,6 +13,7 @@ class ProgressStore {
   static const _kLastPracticeDay = 'last_practice_day';
   static const _kCompletedLessons = 'completed_lessons';
   static const _kVoiceConsentAt = 'voice_consent_at';
+  static const _kRigorousMode = 'rigorous_mode';
 
   /// Meta do produto: 484 horas de prática aprovada.
   static const goalSeconds = 484 * 3600;
@@ -54,6 +55,13 @@ class ProgressStore {
     await _prefs.setString(
         _kVoiceConsentAt, DateTime.now().toIso8601String());
   }
+
+  /// Modo desafio: aprovação exige pronúncia próxima da nativa. Default off
+  /// (Fase 1 é confiança primeiro).
+  bool get rigorousMode => _prefs.getBool(_kRigorousMode) ?? false;
+
+  Future<void> setRigorousMode(bool value) async =>
+      _prefs.setBool(_kRigorousMode, value);
 
   bool isLessonCompleted(String lessonId) =>
       (_prefs.getStringList(_kCompletedLessons) ?? const [])

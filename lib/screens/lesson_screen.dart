@@ -21,10 +21,14 @@ class LessonScreen extends StatefulWidget {
     required this.assessor,
     this.store,
     this.analytics,
+    this.rigorous = false,
   });
 
   final Lesson lesson;
   final PronunciationAssessor assessor;
+
+  /// Modo desafio: aprovação exige pronúncia próxima da nativa.
+  final bool rigorous;
 
   /// Quando presente, o tempo aprovado é persistido (barra das 484h).
   final ProgressStore? store;
@@ -125,8 +129,9 @@ class _LessonScreenState extends State<LessonScreen> {
         referenceText: _item.text,
       );
       final attempt = _step == _Step.listen ? 1 : 2;
-      final approved = widget.lesson
-          .approves(result.accuracy, result.minPhoneme, result.prosody);
+      final approved = widget.lesson.approves(
+          result.accuracy, result.minPhoneme, result.prosody,
+          rigorous: widget.rigorous);
       widget.analytics?.log('attempt_assessed', {
         'lesson': widget.lesson.id,
         'item': _item.text,
@@ -290,7 +295,7 @@ class _LessonScreenState extends State<LessonScreen> {
           const SizedBox(height: 16),
           _scoreBadge(theme, r.accuracy),
           const SizedBox(height: 16),
-          Text(feedbackFor(r, widget.lesson),
+          Text(feedbackFor(r, widget.lesson, rigorous: widget.rigorous),
               style: theme.textTheme.bodyLarge, textAlign: TextAlign.center),
           const SizedBox(height: 24),
           FilledButton.icon(
@@ -336,7 +341,8 @@ class _LessonScreenState extends State<LessonScreen> {
       case _Step.resultFinal:
         final r = _result!;
         final approved =
-            widget.lesson.approves(r.accuracy, r.minPhoneme, r.prosody);
+            widget.lesson.approves(r.accuracy, r.minPhoneme, r.prosody,
+                rigorous: widget.rigorous);
         // Melhora da 1ª tentativa (de ouvido) para a final (com apoio):
         // é o que o método chama de "transformar repetição em progresso".
         final gain = _firstAccuracy == null
@@ -362,7 +368,7 @@ class _LessonScreenState extends State<LessonScreen> {
             ),
           if (gain >= 5) const SizedBox(height: 12),
           if (!approved)
-            Text(feedbackFor(r, widget.lesson),
+            Text(feedbackFor(r, widget.lesson, rigorous: widget.rigorous),
                 style: theme.textTheme.bodyMedium,
                 textAlign: TextAlign.center),
           Text(

@@ -4,8 +4,10 @@ import 'pronunciation_assessor.dart';
 /// Feedback curto e acionável em PT-BR (docs/feedback-library.md).
 /// Regra de produto: nunca dizer só "errado" — sempre indicar o que tentar.
 /// Nesta fase as mensagens são fixas; depois a Claude API gera variações.
-String feedbackFor(PronunciationResult r, Lesson lesson) {
-  if (lesson.approves(r.accuracy, r.minPhoneme, r.prosody)) {
+String feedbackFor(PronunciationResult r, Lesson lesson,
+    {bool rigorous = false}) {
+  if (lesson.approves(r.accuracy, r.minPhoneme, r.prosody,
+      rigorous: rigorous)) {
     if (r.accuracy >= 95) {
       return 'Perfeito! Som limpo, do jeito nativo. Pode repetir pra fixar.';
     }

@@ -37,11 +37,18 @@ class Lesson {
 
   final List<LessonItem> items;
 
-  /// Pisos do "modo desafio" — bem acima dos da Fase 1, para quem quer
-  /// cobrança nativa. Sempre mais estritos que o padrão da fase.
+  /// Pisos do "modo desafio", calibrados contra TTS nativo (medições de
+  /// 2026-06): o nativo tira accuracy 94-100, fonema mínimo 78-100 (vogais
+  /// fracas baixam até 78 mesmo no nativo) e prosódia 84-88; o mesmo texto
+  /// com sotaque pt-BR cai para accuracy 72-96 e prosódia 66-82.
+  ///
+  /// A prosódia (stress/ritmo) é a alavanca que separa sotaque de nativo em
+  /// palavras-armadilha como "hotel", onde a accuracy do sotaque empata com
+  /// a do nativo. O piso de fonema fica em 78 — subir mais reprovaria a
+  /// vogal fraca do "banana" nativo (falso negativo).
   static const rigorousAccuracy = 90.0;
-  static const rigorousPhoneme = 80.0;
-  static const rigorousProsody = 75.0;
+  static const rigorousPhoneme = 78.0;
+  static const rigorousProsody = 80.0;
 
   bool approves(double accuracy, double minPhonemeScore, double? prosody,
       {bool rigorous = false}) {

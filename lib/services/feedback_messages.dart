@@ -20,15 +20,18 @@ String feedbackFor(PronunciationResult r, Lesson lesson,
     return 'Faltou um pedaço — fale a palavra inteira, até o fim.';
   }
   // Um som específico de português escapou: aponta o trecho exato.
+  final phonemeFloor =
+      rigorous ? Lesson.rigorousPhoneme : lesson.minPhoneme;
   final worst = r.worstSyllable;
-  if (r.minPhoneme < lesson.minPhoneme &&
+  if (r.minPhoneme < phonemeFloor &&
       worst != null &&
       worst.grapheme.isNotEmpty) {
     return 'Quase! O trecho "${worst.grapheme}" saiu com som de português. '
         'Escute de novo prestando atenção nesse pedaço.';
   }
-  final minProsody = lesson.minProsody;
-  if (minProsody != null && (r.prosody ?? 100) < minProsody) {
+  // Prosódia: piso da lição (modo normal) ou o do desafio (modo rigoroso).
+  final prosodyFloor = rigorous ? Lesson.rigorousProsody : lesson.minProsody;
+  if (prosodyFloor != null && (r.prosody ?? 100) < prosodyFloor) {
     return 'O som está bom, mas o ritmo ficou diferente — ouça onde está '
         'a força da palavra e copie a música, não as letras.';
   }

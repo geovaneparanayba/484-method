@@ -138,8 +138,17 @@ void main() {
     // Passa no modo normal (>=75), mas não no desafio (exige accuracy >=90).
     expect(lesson.approves(82, 78, 90), isTrue);
     expect(lesson.approves(82, 78, 90, rigorous: true), isFalse);
-    // Pronúncia nativa passa nos dois.
-    expect(lesson.approves(96, 92, 88, rigorous: true), isTrue);
+
+    // Casos reais de "hotel" (medições de 2026-06): a prosódia separa
+    // sotaque de nativo quando a accuracy empata.
+    expect(lesson.approves(100, 100, 84, rigorous: true), isTrue, // nativo
+        reason: 'hotel nativo deve passar no desafio');
+    expect(lesson.approves(96, 78, 66, rigorous: true), isFalse, // sotaque
+        reason: 'hotel com sotaque deve falhar por prosódia, não por accuracy');
+
+    // "banana" nativo: vogal fraca tira 78 — não pode ser falso negativo.
+    expect(lesson.approves(94, 78, 87, rigorous: true), isTrue,
+        reason: 'pronúncia nativa não pode ser reprovada por vogal fraca');
   });
 
   test('conclusão de lição persiste e não duplica', () async {

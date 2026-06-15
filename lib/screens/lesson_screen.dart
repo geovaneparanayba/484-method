@@ -398,7 +398,7 @@ class _LessonScreenState extends State<LessonScreen> {
           const SizedBox(height: 16),
           Text(
             'Você praticou ${widget.lesson.items.length} palavras e somou '
-            '${_formatMin(_approved)} de prática aprovada.',
+            '${_formatMin(_approved)} de treino aprovado.',
             style: theme.textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),

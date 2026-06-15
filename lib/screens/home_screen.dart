@@ -119,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        '${_format(total)} de prática aprovada',
+                        '${_format(total)} de treino aprovado',
                         style: theme.textTheme.bodyLarge,
                       ),
                       const SizedBox(height: 4),

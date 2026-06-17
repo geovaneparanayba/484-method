@@ -90,7 +90,8 @@ class _LessonScreenState extends State<LessonScreen> {
       if (_player!.state == PlayerState.playing) await _player!.stop();
       await _player!.play(AssetSource(_item.audioAsset));
     } catch (e) {
-      setState(() => _error = 'Erro ao tocar o áudio: $e');
+      debugPrint('[licao] falha ao tocar áudio: $e');
+      setState(() => _error = 'Não consegui tocar o áudio. Tente de novo.');
     }
   }
 
@@ -167,9 +168,11 @@ class _LessonScreenState extends State<LessonScreen> {
       });
       _maybeFetchAiFeedback(result, attempt, approved);
     } catch (e) {
+      debugPrint('[licao] avaliação falhou: $e');
       setState(() {
         _audioSent += audio.duration;
-        _error = '$e';
+        _error = 'Não consegui avaliar sua gravação agora. '
+            'Confira sua conexão e grave de novo.';
         _recPhase = _RecPhase.idle;
       });
     }

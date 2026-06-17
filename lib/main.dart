@@ -4,6 +4,7 @@ import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/analytics_service.dart';
 import 'services/backend.dart';
+import 'services/entitlement_service.dart';
 import 'services/progress_store.dart';
 import 'services/pronunciation_assessor.dart';
 
@@ -20,13 +21,22 @@ Future<void> main() async {
   await Backend.init(url: _supabaseUrl, anonKey: _supabaseAnonKey);
   final store = await ProgressStore.load(backend: Backend.instance);
   final analytics = await AnalyticsService.load(backend: Backend.instance);
-  runApp(Method484App(store: store, analytics: analytics));
+  // Web/dev usa o fake local; mobile trocará por RevenueCat na mesma interface.
+  final entitlement = await LocalEntitlementService.load();
+  runApp(Method484App(
+      store: store, analytics: analytics, entitlement: entitlement));
 }
 
 class Method484App extends StatefulWidget {
-  const Method484App({super.key, required this.store, this.analytics});
+  const Method484App({
+    super.key,
+    required this.store,
+    required this.entitlement,
+    this.analytics,
+  });
 
   final ProgressStore store;
+  final EntitlementService entitlement;
   final AnalyticsService? analytics;
 
   @override
@@ -48,6 +58,7 @@ class _Method484AppState extends State<Method484App> {
     } else {
       home = HomeScreen(
         store: widget.store,
+        entitlement: widget.entitlement,
         assessor: AzurePronunciationAssessor(
           subscriptionKey: _azureKey,
           region: _azureRegion,

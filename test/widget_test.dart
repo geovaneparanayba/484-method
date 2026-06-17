@@ -10,6 +10,7 @@ import 'package:method484/screens/onboarding_screen.dart';
 import 'package:method484/screens/practice_screen.dart';
 import 'package:method484/services/feedback_messages.dart';
 import 'package:method484/services/analytics_service.dart';
+import 'package:method484/services/entitlement_service.dart';
 import 'package:method484/services/progress_store.dart';
 import 'package:method484/services/pronunciation_assessor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,7 +40,10 @@ Future<ProgressStore> _emptyStore() async {
 void main() {
   testWidgets('sem chave configurada, mostra instruções de setup',
       (tester) async {
-    await tester.pumpWidget(Method484App(store: await _emptyStore()));
+    await tester.pumpWidget(Method484App(
+      store: await _emptyStore(),
+      entitlement: await LocalEntitlementService.load(),
+    ));
     expect(find.textContaining('Chave do Azure'), findsOneWidget);
   });
 

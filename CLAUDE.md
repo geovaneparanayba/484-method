@@ -15,16 +15,22 @@ Loop core de uma lição (8 etapas):
 Métrica norte do produto: **minutos de prática oral APROVADA**, nunca tempo de tela.
 
 ## Escopo do MVP (v1)
-- Auth simples (Firebase Auth ou Supabase Auth — decidir e fixar aqui)
+- ✅ Auth: **Supabase Auth** (decidido e em produção) — sign-in anônimo, cada
+  usuário ganha um id estável sem cadastro. Progresso e eventos no Postgres
+  com RLS por user_id; degrada para local-only sem credenciais.
 - Fase 1 "Inglês que Você Já Conhece": 10 microlições de 5–10 min
   (matriz completa em docs/curriculo-fase1.md)
-- Loop core completo: áudio pré-gerado → gravação → Azure Pronunciation
+- ✅ Loop core completo: áudio pré-gerado → gravação → Azure Pronunciation
   Assessment → feedback pedagógico em PT-BR → liberação da escrita → regravação
-- Dashboard com progresso em minutos aprovados (barra das 484 horas) + streak simples
+- ✅ Feedback gerado pela Claude API via Edge Function (fallback p/ mensagens
+  fixas sem chave/rede) — ver "Regras de produto que viram código".
+- ✅ Dashboard com progresso em minutos aprovados (barra das 484h) + streak
 - Threshold de aprovação CONFIGURÁVEL por lição (permissivo na Fase 1)
-- Onboarding com promessa + regra som-first + consentimento de gravação de voz
-- Analytics de eventos (conclusão, tentativas, regravação, retenção)
-- Paywall via RevenueCat (oferta "Beta Fundador" — acesso à Fase 1)
+- ✅ Onboarding com promessa + regra som-first + consentimento de gravação de voz
+- ✅ Analytics de eventos (conclusão, tentativas, regravação, retenção)
+- Paywall (oferta "Beta Fundador" — acesso à Fase 1): gating das lições atrás
+  de `EntitlementService` JÁ implementado (3 lições grátis, fake local na web).
+  Falta só a impl real com RevenueCat — bloqueada por conta Apple (ver Stack).
 
 ## Fora de escopo (NÃO implementar)
 - Fases 2–8, múltiplos sotaques, connected speech, pares mínimos, IPA
@@ -53,15 +59,27 @@ Métrica norte do produto: **minutos de prática oral APROVADA**, nunca tempo de
 - Flutter (iOS + Android)
 - Azure Speech SDK — Pronunciation Assessment (accuracy, fluency, completeness)
 - ElevenLabs — geração dos áudios das lições (offline/build-time, não em runtime)
-- Firebase ou Supabase — auth + progresso + eventos
-- Claude API — feedback pedagógico em PT-BR (mapear erros do Azure → mensagens
-  acionáveis; biblioteca base em docs/feedback-library.md)
-- RevenueCat — assinaturas
+- **Supabase** — auth (anônima) + progresso + eventos (RLS) + Edge Functions.
+  Projeto dedicado `484-method` (ref pwijrjgdbosxamybukhg, sa-east-1).
+- Claude API — feedback pedagógico em PT-BR, chamado pela Edge Function
+  `feedback` (chave Anthropic como secret `ANTHROPIC_API_KEY`, nunca no
+  cliente). Mapeia scores do Azure → mensagem acionável; base em
+  docs/feedback-library.md (fallback fixo quando indisponível).
+- RevenueCat — assinaturas. ⚠️ `purchases_flutter` NÃO roda na web: a venda
+  real só funciona em build iOS/Android e exige Apple Developer Program
+  ($99/ano, ainda não adquirido). Por isso o paywall vive atrás de
+  `EntitlementService` (interface), com fake local na web e a impl RevenueCat
+  prevista para entrar sem tocar a UI quando houver conta Apple + CI iOS.
 
 ## Regras de produto que viram código
 - Aprovação de tentativa: accuracy como critério principal em palavras;
   completeness/fluency ganham peso em chunks (lições 7–9)
-- Feedback nunca diz só "errado" — sempre indica o que tentar corrigir
+- Feedback nunca diz só "errado" — sempre indica o que tentar corrigir. A
+  mensagem fixa aparece na hora e é trocada pela da Claude quando chega; sem
+  rede/chave fica a fixa (o app nunca depende da Claude para funcionar)
+- Paywall: as 3 primeiras lições da Fase 1 são grátis (`kFreeLessonCount`);
+  da 4ª em diante exige acesso "Beta Fundador". Gating passa SEMPRE pela
+  interface `EntitlementService` — nunca checar compra direto da UI
 - Tom adulto, direto, encorajador; sem infantilizar, sem prometer fluência
 - LGPD: gravação de voz é dado sensível — consentimento explícito antes da
   primeira gravação, política de retenção/exclusão definida, exclusão de conta

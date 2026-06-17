@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/fase1.dart';
 import '../models/lesson.dart';
 import '../services/analytics_service.dart';
+import '../services/entitlement_service.dart';
 import '../services/progress_store.dart';
 import '../services/pronunciation_assessor.dart';
 import 'lesson_screen.dart';
@@ -15,12 +16,14 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.store,
+    required this.entitlement,
     required this.assessor,
     this.analytics,
     this.onDataCleared,
   });
 
   final ProgressStore store;
+  final EntitlementService entitlement;
   final PronunciationAssessor assessor;
   final AnalyticsService? analytics;
 
@@ -58,6 +61,24 @@ class _HomeScreenState extends State<HomeScreen> {
     widget.onDataCleared?.call();
   }
 
+  /// Aviso do gate de pagamento. Ainda não há tela de compra: o RevenueCat
+  /// real só entra com build mobile + conta Apple, então aqui o gating fica
+  /// visível mas a compra é apenas anunciada.
+  void _showPaywallNotice() {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('A partir da lição ${kFreeLessonCount + 1} faz parte do '
+          'Beta Fundador. A compra entra quando o app chegar à App Store.'),
+    ));
+  }
+
+  /// Alterna o acesso na implementação fake (web/dev) para testar os dois
+  /// estados do gating sem loja. Some quando a impl real (RevenueCat) entrar.
+  Future<void> _toggleFounderAccess() async {
+    await widget.entitlement
+        .setFounderAccess(!widget.entitlement.hasFounderAccess);
+    if (mounted) setState(() {});
+  }
+
   Future<void> _openLesson(Lesson lesson) async {
     await Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => LessonScreen(
@@ -87,9 +108,18 @@ class _HomeScreenState extends State<HomeScreen> {
             )),
           ),
           PopupMenuButton<String>(
-            onSelected: (_) => _confirmClearData(),
-            itemBuilder: (_) => const [
+            onSelected: (v) {
+              if (v == 'clear') _confirmClearData();
+              if (v == 'toggle_founder') _toggleFounderAccess();
+            },
+            itemBuilder: (_) => [
               PopupMenuItem(
+                value: 'toggle_founder',
+                child: Text(widget.entitlement.hasFounderAccess
+                    ? '[dev] Desligar Beta Fundador'
+                    : '[dev] Ligar Beta Fundador'),
+              ),
+              const PopupMenuItem(
                 value: 'clear',
                 child: Text('Apagar meus dados'),
               ),
@@ -153,34 +183,54 @@ class _HomeScreenState extends State<HomeScreen> {
               Text('Fase 1 — Inglês que Você Já Conhece',
                   style: theme.textTheme.titleMedium),
               const SizedBox(height: 8),
-              // Desbloqueio progressivo: a lição N abre quando a N-1 foi
-              // concluída (a primeira está sempre aberta).
+              // Dois gates: o de pagamento (lições além das grátis exigem
+              // Beta Fundador) e o progressivo (a lição N abre quando a N-1
+              // foi concluída; a primeira está sempre aberta).
               for (final (i, lesson) in fase1Lessons.indexed)
                 Builder(builder: (context) {
                   final completed =
                       widget.store.isLessonCompleted(lesson.id);
-                  final unlocked = i == 0 ||
+                  final paywalled = i >= kFreeLessonCount &&
+                      !widget.entitlement.hasFounderAccess;
+                  final progressionUnlocked = i == 0 ||
                       widget.store
                           .isLessonCompleted(fase1Lessons[i - 1].id);
+                  final unlocked = !paywalled && progressionUnlocked;
+                  final String subtitle;
+                  if (paywalled) {
+                    subtitle = 'Beta Fundador';
+                  } else if (!progressionUnlocked) {
+                    subtitle = 'Conclua a lição anterior para desbloquear';
+                  } else {
+                    subtitle = '${lesson.items.length} palavras · ~5 min';
+                  }
+                  final IconData trailing;
+                  if (paywalled) {
+                    trailing = Icons.workspace_premium_outlined;
+                  } else if (!progressionUnlocked) {
+                    trailing = Icons.lock_outline;
+                  } else {
+                    trailing = completed ? Icons.replay : Icons.play_arrow;
+                  }
                   return Card(
                     child: ListTile(
-                      enabled: unlocked,
+                      // Paywalled fica tocável para mostrar o aviso do gate.
+                      enabled: unlocked || paywalled,
                       leading: CircleAvatar(
-                        backgroundColor: completed
-                            ? Colors.green.shade100
-                            : null,
+                        backgroundColor:
+                            completed ? Colors.green.shade100 : null,
                         child: completed
                             ? const Icon(Icons.check, color: Colors.green)
                             : Text('${i + 1}'),
                       ),
                       title: Text(lesson.title),
-                      subtitle: Text(unlocked
-                          ? '${lesson.items.length} palavras · ~5 min'
-                          : 'Conclua a lição anterior para desbloquear'),
-                      trailing: Icon(unlocked
-                          ? (completed ? Icons.replay : Icons.play_arrow)
-                          : Icons.lock_outline),
-                      onTap: unlocked ? () => _openLesson(lesson) : null,
+                      subtitle: Text(subtitle),
+                      trailing: Icon(trailing),
+                      onTap: paywalled
+                          ? _showPaywallNotice
+                          : unlocked
+                              ? () => _openLesson(lesson)
+                              : null,
                     ),
                   );
                 }),

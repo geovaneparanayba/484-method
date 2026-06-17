@@ -1,0 +1,40 @@
+name: iOS build
+
+# Valida que o app compila para iOS na nuvem (esta máquina não tem Xcode).
+# Build SEM assinatura: não precisa de conta Apple nem de secrets — só prova
+# que o código gera um app iOS. Quando houver Apple Developer Program,
+# adicionamos os passos de code signing + upload para o TestFlight.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Build iOS (sem assinatura)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Versões
+        run: flutter --version
+
+      - name: Dependências
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Testes
+        run: flutter test
+
+      - name: Build iOS (no codesign)
+        run: flutter build ios --release --no-codesign

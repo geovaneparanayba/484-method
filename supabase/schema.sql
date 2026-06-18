@@ -22,6 +22,9 @@ create policy "own progress: insert" on public.progress
   for insert with check (auth.uid() = user_id);
 create policy "own progress: update" on public.progress
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- LGPD: o usuário apaga os próprios dados pelo app (Backend.deleteRemoteData).
+create policy "own progress: delete" on public.progress
+  for delete using (auth.uid() = user_id);
 
 -- Eventos de produto (métricas do MVP): append-only por usuário.
 create table if not exists public.events (
@@ -38,6 +41,9 @@ create policy "own events: select" on public.events
   for select using (auth.uid() = user_id);
 create policy "own events: insert" on public.events
   for insert with check (auth.uid() = user_id);
+-- LGPD: idem progress — exclusão dos próprios eventos pelo app.
+create policy "own events: delete" on public.events
+  for delete using (auth.uid() = user_id);
 
 create index if not exists events_user_created_idx
   on public.events (user_id, created_at desc);

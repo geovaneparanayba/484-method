@@ -200,4 +200,22 @@ void main() {
     expect(store.totalApproved.inSeconds, 15);
     expect(store.streakDays, 1);
   });
+
+  test('acesso Beta Fundador começa desligado e persiste quando ligado',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    final ent = await LocalEntitlementService.load();
+    expect(ent.hasFounderAccess, isFalse); // default: sem acesso
+
+    await ent.setFounderAccess(true);
+    expect(ent.hasFounderAccess, isTrue);
+
+    // Persiste: uma nova instância lê o mesmo valor (cross-sessão).
+    final ent2 = await LocalEntitlementService.load();
+    expect(ent2.hasFounderAccess, isTrue);
+  });
+
+  test('regra de produto: 3 lições grátis antes do paywall', () {
+    expect(kFreeLessonCount, 3);
+  });
 }

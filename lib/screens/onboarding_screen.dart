@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/progress_store.dart';
+import 'privacy_policy_screen.dart';
 
 /// Onboarding de primeiro uso: promessa → como funciona (regra som-first)
 /// → consentimento de gravação de voz (LGPD).
@@ -172,6 +173,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         'é baseado na sua voz.',
         style: theme.textTheme.bodySmall,
         textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 8),
+      TextButton(
+        onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => const PrivacyPolicyScreen(),
+        )),
+        child: const Text('Ler a política de privacidade'),
       ),
     ]);
   }

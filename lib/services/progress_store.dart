@@ -114,9 +114,12 @@ class ProgressStore {
     backend?.pushProgress(_snapshot());
   }
 
-  /// LGPD: exclusão de todos os dados locais (progresso, streak, consentimento).
-  /// Quando houver backend, esta chamada também aciona a exclusão remota.
-  Future<void> clearAll() => _prefs.clear();
+  /// LGPD: exclusão de todos os dados do usuário. Apaga primeiro os dados
+  /// remotos (Supabase) e depois os locais (progresso, streak, consentimento).
+  Future<void> clearAll() async {
+    await backend?.deleteRemoteData();
+    await _prefs.clear();
+  }
 
   String _ymd(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';

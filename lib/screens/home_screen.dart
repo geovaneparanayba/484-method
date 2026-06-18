@@ -7,7 +7,9 @@ import '../services/entitlement_service.dart';
 import '../services/progress_store.dart';
 import '../services/pronunciation_assessor.dart';
 import 'lesson_screen.dart';
+import 'paywall_screen.dart';
 import 'practice_screen.dart';
+import 'privacy_policy_screen.dart';
 
 /// Dashboard: a barra das 484 horas, o streak e a porta de entrada das
 /// lições. É a tela que o aluno vê todo dia — precisa mostrar progresso
@@ -42,8 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Apagar todos os seus dados?'),
         content: const Text(
             'Progresso, streak, lições concluídas e o consentimento de '
-            'gravação serão apagados deste dispositivo. Essa ação não '
-            'pode ser desfeita.'),
+            'gravação serão apagados deste dispositivo e da nuvem. Essa '
+            'ação não pode ser desfeita.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -61,13 +63,34 @@ class _HomeScreenState extends State<HomeScreen> {
     widget.onDataCleared?.call();
   }
 
-  /// Aviso do gate de pagamento. Ainda não há tela de compra: o RevenueCat
-  /// real só entra com build mobile + conta Apple, então aqui o gating fica
-  /// visível mas a compra é apenas anunciada.
-  void _showPaywallNotice() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('A partir da lição ${kFreeLessonCount + 1} faz parte do '
-          'Beta Fundador. A compra entra quando o app chegar à App Store.'),
+  /// Abre a oferta Beta Fundador. A compra real (RevenueCat) só existe no
+  /// mobile; aqui o CTA anuncia a disponibilidade, e o menu de dev libera o
+  /// acesso para teste na web.
+  void _openPaywall() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => PaywallScreen(
+        onSubscribe: () => showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Em breve'),
+            content: const Text(
+                'A assinatura Beta Fundador entra quando o app chegar à '
+                'App Store. Obrigado por querer fazer parte desde o começo!'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Entendi'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ));
+  }
+
+  void _openPrivacyPolicy() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => const PrivacyPolicyScreen(),
     ));
   }
 
@@ -111,6 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onSelected: (v) {
               if (v == 'clear') _confirmClearData();
               if (v == 'toggle_founder') _toggleFounderAccess();
+              if (v == 'privacy') _openPrivacyPolicy();
             },
             itemBuilder: (_) => [
               PopupMenuItem(
@@ -118,6 +142,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Text(widget.entitlement.hasFounderAccess
                     ? '[dev] Desligar Beta Fundador'
                     : '[dev] Ligar Beta Fundador'),
+              ),
+              const PopupMenuItem(
+                value: 'privacy',
+                child: Text('Política de privacidade'),
               ),
               const PopupMenuItem(
                 value: 'clear',
@@ -227,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       subtitle: Text(subtitle),
                       trailing: Icon(trailing),
                       onTap: paywalled
-                          ? _showPaywallNotice
+                          ? _openPaywall
                           : unlocked
                               ? () => _openLesson(lesson)
                               : null,

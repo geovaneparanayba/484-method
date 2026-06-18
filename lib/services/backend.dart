@@ -85,6 +85,20 @@ class Backend {
     }
   }
 
+  /// LGPD: apaga os dados remotos do usuário (progresso + eventos). Chamado
+  /// pela exclusão de dados do app, fechando o ciclo "apagar = some de tudo".
+  /// Falha silenciosa não impede a limpeza local (fonte de verdade da UI).
+  Future<void> deleteRemoteData() async {
+    final uid = userId;
+    if (uid == null) return;
+    try {
+      await client.from('events').delete().eq('user_id', uid);
+      await client.from('progress').delete().eq('user_id', uid);
+    } catch (e) {
+      debugPrint('[backend] deleteRemoteData falhou: $e');
+    }
+  }
+
   /// Progresso remoto (para hidratar o cache local em outro dispositivo).
   Future<Map<String, dynamic>?> pullProgress() async {
     final uid = userId;

@@ -38,13 +38,13 @@ Future<ProgressStore> _emptyStore() async {
 }
 
 void main() {
-  testWidgets('sem chave configurada, mostra instruções de setup',
+  testWidgets('sem Supabase configurado, mostra instruções de setup',
       (tester) async {
     await tester.pumpWidget(Method484App(
       store: await _emptyStore(),
       entitlement: await LocalEntitlementService.load(),
     ));
-    expect(find.textContaining('Chave do Azure'), findsOneWidget);
+    expect(find.textContaining('Supabase não configurado'), findsOneWidget);
   });
 
   testWidgets('tela de prática mostra palavra-alvo e botão de gravar',

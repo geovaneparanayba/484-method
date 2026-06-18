@@ -154,45 +154,51 @@ class AzurePronunciationAssessor implements PronunciationAssessor {
       );
     }
 
-    final json = jsonDecode(response.body) as Map<String, dynamic>;
-    if (json['RecognitionStatus'] != 'Success') {
-      throw PronunciationAssessmentException(
-        'Fala não reconhecida (${json['RecognitionStatus']}). '
-        'Tente de novo mais perto do microfone.',
-      );
-    }
+    return parseAzureResponse(
+        jsonDecode(response.body) as Map<String, dynamic>);
+  }
+}
 
-    // No REST short-audio os scores vêm direto no item do NBest (não dentro
-    // de um objeto "PronunciationAssessment" como no Speech SDK).
-    final best = (json['NBest'] as List).first as Map<String, dynamic>;
-    final words = (best['Words'] as List? ?? []).map((w) {
-      final word = w as Map<String, dynamic>;
-      return WordScore(
-        word: word['Word'] as String,
-        accuracy: (word['AccuracyScore'] as num?)?.toDouble() ?? 0,
-        errorType: word['ErrorType'] == 'None'
-            ? null
-            : word['ErrorType'] as String?,
-        syllables: (word['Syllables'] as List? ?? [])
-            .map((s) => SyllableScore(
-                  grapheme: (s['Grapheme'] ?? s['Syllable'] ?? '') as String,
-                  accuracy: (s['AccuracyScore'] as num?)?.toDouble() ?? 0,
-                ))
-            .toList(),
-        phonemes: (word['Phonemes'] as List? ?? [])
-            .map((p) => (p['AccuracyScore'] as num?)?.toDouble() ?? 0)
-            .toList(),
-      );
-    }).toList();
-
-    return PronunciationResult(
-      accuracy: (best['AccuracyScore'] as num).toDouble(),
-      fluency: (best['FluencyScore'] as num).toDouble(),
-      completeness: (best['CompletenessScore'] as num).toDouble(),
-      pronScore: (best['PronScore'] as num).toDouble(),
-      prosody: (best['ProsodyScore'] as num?)?.toDouble(),
-      recognizedText: best['Display'] as String? ?? '',
-      words: words,
+/// Converte o JSON detalhado do Azure (REST short-audio) em
+/// [PronunciationResult]. Compartilhado pela chamada direta (dev) e pela via
+/// backend (Edge Function), que retorna o mesmo corpo do Azure.
+PronunciationResult parseAzureResponse(Map<String, dynamic> json) {
+  if (json['RecognitionStatus'] != 'Success') {
+    throw PronunciationAssessmentException(
+      'Fala não reconhecida (${json['RecognitionStatus']}). '
+      'Tente de novo mais perto do microfone.',
     );
   }
+
+  // No REST short-audio os scores vêm direto no item do NBest (não dentro
+  // de um objeto "PronunciationAssessment" como no Speech SDK).
+  final best = (json['NBest'] as List).first as Map<String, dynamic>;
+  final words = (best['Words'] as List? ?? []).map((w) {
+    final word = w as Map<String, dynamic>;
+    return WordScore(
+      word: word['Word'] as String,
+      accuracy: (word['AccuracyScore'] as num?)?.toDouble() ?? 0,
+      errorType:
+          word['ErrorType'] == 'None' ? null : word['ErrorType'] as String?,
+      syllables: (word['Syllables'] as List? ?? [])
+          .map((s) => SyllableScore(
+                grapheme: (s['Grapheme'] ?? s['Syllable'] ?? '') as String,
+                accuracy: (s['AccuracyScore'] as num?)?.toDouble() ?? 0,
+              ))
+          .toList(),
+      phonemes: (word['Phonemes'] as List? ?? [])
+          .map((p) => (p['AccuracyScore'] as num?)?.toDouble() ?? 0)
+          .toList(),
+    );
+  }).toList();
+
+  return PronunciationResult(
+    accuracy: (best['AccuracyScore'] as num).toDouble(),
+    fluency: (best['FluencyScore'] as num).toDouble(),
+    completeness: (best['CompletenessScore'] as num).toDouble(),
+    pronScore: (best['PronScore'] as num).toDouble(),
+    prosody: (best['ProsodyScore'] as num?)?.toDouble(),
+    recognizedText: best['Display'] as String? ?? '',
+    words: words,
+  );
 }

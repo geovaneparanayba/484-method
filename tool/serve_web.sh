@@ -15,9 +15,9 @@ set -a
 source .env
 set +a
 
+# Chave do Azure não entra no build (a avaliação passa pela Edge Function
+# `assess`); só as chaves públicas do Supabase.
 flutter build web \
-  --dart-define=AZURE_SPEECH_KEY="${AZURE_SPEECH_KEY:-}" \
-  --dart-define=AZURE_SPEECH_REGION="${AZURE_SPEECH_REGION:-brazilsouth}" \
   --dart-define=SUPABASE_URL="${SUPABASE_URL:-}" \
   --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
 

@@ -13,8 +13,9 @@ set -a
 source .env
 set +a
 
+# A chave do Azure NÃO vai mais pro cliente: a avaliação passa pela Edge
+# Function `assess` (chave como secret do Supabase). Só as chaves públicas
+# do Supabase entram no build.
 exec flutter run -d chrome --profile --web-port 8484 \
-  --dart-define=AZURE_SPEECH_KEY="${AZURE_SPEECH_KEY:-}" \
-  --dart-define=AZURE_SPEECH_REGION="${AZURE_SPEECH_REGION:-brazilsouth}" \
   --dart-define=SUPABASE_URL="${SUPABASE_URL:-}" \
   --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"

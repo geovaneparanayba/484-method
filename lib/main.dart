@@ -4,20 +4,20 @@ import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/analytics_service.dart';
 import 'services/backend.dart';
+import 'services/backend_assessor.dart';
 import 'services/entitlement_service.dart';
 import 'services/progress_store.dart';
-import 'services/pronunciation_assessor.dart';
 
 // Injetadas em tempo de build pelos scripts em tool/ (que leem o .env).
-const _azureKey = String.fromEnvironment('AZURE_SPEECH_KEY');
-const _azureRegion =
-    String.fromEnvironment('AZURE_SPEECH_REGION', defaultValue: 'brazilsouth');
+// A chave do Azure NÃO entra aqui: a avaliação passa pela Edge Function
+// `assess`, então a chave vive só como secret do Supabase (não vaza na web).
 const _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const _supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Sem credenciais Supabase, Backend.instance fica null e o app roda local.
+  // Backend é obrigatório: a avaliação de pronúncia roda pela Edge Function.
+  // Sem credenciais Supabase, Backend.instance fica null → tela de setup.
   await Backend.init(url: _supabaseUrl, anonKey: _supabaseAnonKey);
   final store = await ProgressStore.load(backend: Backend.instance);
   final analytics = await AnalyticsService.load(backend: Backend.instance);
@@ -47,8 +47,9 @@ class _Method484AppState extends State<Method484App> {
   @override
   Widget build(BuildContext context) {
     final Widget home;
-    if (_azureKey.isEmpty) {
-      home = const _MissingKeyScreen();
+    final backend = Backend.instance;
+    if (backend == null) {
+      home = const _MissingConfigScreen();
     } else if (!widget.store.hasVoiceConsent) {
       // LGPD: nenhuma gravação antes do consentimento do onboarding.
       home = OnboardingScreen(
@@ -59,10 +60,7 @@ class _Method484AppState extends State<Method484App> {
       home = HomeScreen(
         store: widget.store,
         entitlement: widget.entitlement,
-        assessor: AzurePronunciationAssessor(
-          subscriptionKey: _azureKey,
-          region: _azureRegion,
-        ),
+        assessor: BackendPronunciationAssessor(backend),
         analytics: widget.analytics,
         // Exclusão de dados derruba o consentimento → volta ao onboarding.
         onDataCleared: () => setState(() {}),
@@ -76,8 +74,8 @@ class _Method484AppState extends State<Method484App> {
   }
 }
 
-class _MissingKeyScreen extends StatelessWidget {
-  const _MissingKeyScreen();
+class _MissingConfigScreen extends StatelessWidget {
+  const _MissingConfigScreen();
 
   @override
   Widget build(BuildContext context) {
@@ -86,8 +84,9 @@ class _MissingKeyScreen extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Text(
-            'Chave do Azure não configurada.\n\n'
-            '1. Copie .env.example para .env e preencha a chave.\n'
+            'Supabase não configurado.\n\n'
+            '1. Copie .env.example para .env e preencha SUPABASE_URL e '
+            'SUPABASE_ANON_KEY.\n'
             '2. Rode o app com: ./tool/run_web.sh',
             textAlign: TextAlign.center,
           ),

@@ -20,7 +20,7 @@ comercial é "Inglês que Você Já Conhece".
 
 | # | Tema | Exemplos | Foco | Critério de aprovação |
 |---|---|---|---|---|
-| 1 | Você já sabe inglês | banana, cinema, hotel, internet, pizza | Confiança e familiaridade | Gravar ≥1 vez; regravar após feedback |
+| 1 | Quebrando o gelo | apple, cinema, hotel, internet, pizza | Confiança e familiaridade | Gravar ≥1 vez; regravar após feedback |
 | 2 | Palavras do celular | app, online, email, login, video | Inglês digital cotidiano | Accuracy leve + completude |
 | 3 | Comida | coffee, burger, sandwich, cake, water | Vocabulário simples e útil | Repetição clara, finalizar a palavra |
 | 4 | Viagem | airport, taxi, bus, passport, ticket | Inglês de sobrevivência | Pronúncia + associação com situação |

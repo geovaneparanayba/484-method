@@ -18,19 +18,19 @@ const fase1Lessons = [
 
 const licao01 = Lesson(
   id: 'fase1-licao01',
-  title: 'Você já sabe inglês',
+  title: 'Quebrando o gelo',
   objective: 'Você vai falar 5 palavras em inglês que já conhece — '
       'e descobrir que seu inglês já começou.',
   approvalThreshold: 75,
   items: [
     LessonItem(
-      text: 'banana',
-      translation: 'banana',
-      example: 'I eat a banana every day.',
-      exampleTranslation: 'Eu como uma banana todo dia.',
-      audioAsset: 'audio/fase1/licao01/banana.mp3',
-      ipa: '/bəˈnænə/',
-      phonetic: 'ba-NÉ-na',
+      text: 'apple',
+      translation: 'maçã',
+      example: 'I eat an apple every day.',
+      exampleTranslation: 'Eu como uma maçã todo dia.',
+      audioAsset: 'audio/fase1/licao01/apple.mp3',
+      ipa: '/ˈæpəl/',
+      phonetic: 'É-pou',
     ),
     LessonItem(
       text: 'cinema',

@@ -66,7 +66,7 @@ void main() {
     await tester.tap(find.text('Começar'));
     await tester.pump();
     // Etapa "ouça": a palavra não pode estar escrita em lugar nenhum.
-    expect(find.text('banana'), findsNothing);
+    expect(find.text('apple'), findsNothing);
     expect(find.text('Ouvir'), findsOneWidget);
   });
 

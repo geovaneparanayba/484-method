@@ -28,7 +28,7 @@ gen() {
   done
 }
 
-gen licao01 "banana" "cinema" "hotel" "internet" "pizza"
+gen licao01 "apple" "cinema" "hotel" "internet" "pizza"
 gen licao02 "app" "online" "email" "login" "video"
 gen licao03 "coffee" "burger" "sandwich" "cake" "water"
 gen licao04 "airport" "taxi" "bus" "passport" "ticket"

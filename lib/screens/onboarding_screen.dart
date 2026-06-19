@@ -131,7 +131,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _page2(ThemeData theme) {
     return _pageScaffold([
-      Text('Primeiro o ouvido.\nDepois a boca.\nSó depois os olhos.',
+      Text('Primeiro escute, depois fale.',
           style: theme.textTheme.headlineSmall, textAlign: TextAlign.center),
       const SizedBox(height: 16),
       Text(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'screens/home_screen.dart';
+import 'screens/intro_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/analytics_service.dart';
 import 'services/backend.dart';
@@ -44,6 +45,11 @@ class Method484App extends StatefulWidget {
 }
 
 class _Method484AppState extends State<Method484App> {
+  // Landing antes do onboarding: enquadra a demo pra quem abre o link cold.
+  // Em memória (some no reload) — o usuário recorrente já tem consentimento
+  // e cai direto no app, sem ver a landing nem o onboarding.
+  bool _introSeen = false;
+
   @override
   Widget build(BuildContext context) {
     final Widget home;
@@ -52,10 +58,12 @@ class _Method484AppState extends State<Method484App> {
       home = const _MissingConfigScreen();
     } else if (!widget.store.hasVoiceConsent) {
       // LGPD: nenhuma gravação antes do consentimento do onboarding.
-      home = OnboardingScreen(
-        store: widget.store,
-        onDone: () => setState(() {}),
-      );
+      home = _introSeen
+          ? OnboardingScreen(
+              store: widget.store,
+              onDone: () => setState(() {}),
+            )
+          : IntroScreen(onStart: () => setState(() => _introSeen = true));
     } else {
       home = HomeScreen(
         store: widget.store,

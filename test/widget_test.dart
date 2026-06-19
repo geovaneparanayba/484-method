@@ -77,10 +77,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: OnboardingScreen(store: store, onDone: () => done = true),
     ));
-    expect(find.textContaining('Você sabe mais inglês'), findsOneWidget);
+    expect(find.textContaining('Primeiro escute'), findsOneWidget);
 
-    await tester.tap(find.text('Continuar'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
 

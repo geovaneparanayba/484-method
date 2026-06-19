@@ -22,7 +22,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _controller = PageController();
   int _page = 0;
 
-  static const _pageCount = 3;
+  static const _pageCount = 2;
 
   @override
   void dispose() {
@@ -56,7 +56,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   controller: _controller,
                   onPageChanged: (p) => setState(() => _page = p),
                   children: [
-                    _page1(theme),
                     _page2(theme),
                     _page3(theme),
                   ],
@@ -102,31 +101,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
       ),
     );
-  }
-
-  Widget _page1(ThemeData theme) {
-    return _pageScaffold([
-      Text('484 Method',
-          style: theme.textTheme.headlineMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center),
-      const SizedBox(height: 16),
-      Text(
-        'Você sabe mais inglês do que consegue falar.\n'
-        'A gente te ajuda a destravar o som.',
-        style: theme.textTheme.titleLarge,
-        textAlign: TextAlign.center,
-      ),
-      const SizedBox(height: 12),
-      Text(
-        'Prática oral guiada, medida em minutos aprovados — '
-        'não em telas assistidas.',
-        style: theme.textTheme.bodyLarge,
-        textAlign: TextAlign.center,
-      ),
-      const SizedBox(height: 32),
-      FilledButton(onPressed: _next, child: const Text('Continuar')),
-    ]);
   }
 
   Widget _page2(ThemeData theme) {

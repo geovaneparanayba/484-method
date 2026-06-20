@@ -579,7 +579,10 @@ class _SyllableMap extends StatelessWidget {
       for (final w in result.words)
         ...w.syllables.where((s) => s.grapheme.isNotEmpty)
     ];
-    if (syllables.isEmpty) return const SizedBox.shrink();
+    // Para palavras monossilábicas o mapa duplica o placar principal com um
+    // valor ligeiramente diferente (Azure calcula word e syllable de forma
+    // independente), o que confunde. Só mostra quando há ≥2 sílabas.
+    if (syllables.length <= 1) return const SizedBox.shrink();
     return Wrap(
       alignment: WrapAlignment.center,
       spacing: 6,

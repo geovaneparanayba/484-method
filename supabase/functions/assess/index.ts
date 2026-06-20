@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
       `?language=en-US&format=detailed`;
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10_000);
+    const timer = setTimeout(() => controller.abort(), 15_000);
     let azureRes: Response;
     try {
       azureRes = await fetch(url, {

@@ -48,24 +48,41 @@ class PaywallScreen extends StatelessWidget {
                 _benefit(theme, Icons.trending_up,
                     'Progresso medido em minutos de fala aprovada'),
                 const SizedBox(height: 24),
-                Card(
-                  color: theme.colorScheme.secondaryContainer,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      'Oferta de fundador: preço especial para quem entra '
-                      'agora e ajuda a moldar o método.',
-                      style: theme.textTheme.bodyMedium,
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 20, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(children: [
+                    Text(
+                      'R\$ 47',
+                      style: theme.textTheme.displaySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'acesso vitalício à Fase 1',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Não é assinatura. É um voto de confiança em uma ideia '
+                      'que ainda está nascendo — e que você ajuda a moldar.',
+                      style: theme.textTheme.bodySmall,
                       textAlign: TextAlign.center,
                     ),
-                  ),
+                  ]),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 FilledButton(
                   onPressed: onSubscribe,
                   child: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text('Quero ser Fundador'),
+                    child: Text('Apoiar o Method 484'),
                   ),
                 ),
                 TextButton(

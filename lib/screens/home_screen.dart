@@ -95,9 +95,36 @@ class _HomeScreenState extends State<HomeScreen> {
     ));
   }
 
-  void _openStats() {
+  Future<void> _openStats() async {
     final backend = Backend.instance;
     if (backend == null) return;
+    final controller = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Acesso restrito'),
+        content: TextField(
+          controller: controller,
+          obscureText: true,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Senha'),
+          onSubmitted: (_) => Navigator.of(ctx).pop(true),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Entrar'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    if (controller.text != 'geovane484method') return;
+    if (!mounted) return;
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => StatsScreen(backend: backend),
     ));
@@ -176,6 +203,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         value: widget.store.goalFraction,
                         minHeight: 12,
                         borderRadius: BorderRadius.circular(6),
+                        color: theme.colorScheme.secondary,
+                        backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.15),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -206,8 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                   title: const Text('Modo desafio'),
                   subtitle: const Text(
-                      'Só aprova com pronúncia bem próxima da nativa. '
-                      'Mais difícil, para quem quer cobrança.'),
+                      'Só aprova com pronúncia bem próxima da nativa.'),
                   secondary: const Icon(Icons.fitness_center),
                 ),
               ),
@@ -218,21 +246,44 @@ class _HomeScreenState extends State<HomeScreen> {
               // Dois gates: o de pagamento (lições além das grátis exigem
               // Beta Fundador) e o progressivo (a lição N abre quando a N-1
               // foi concluída; a primeira está sempre aberta).
-              for (final (i, lesson) in fase1Lessons.indexed)
+              for (final (i, lesson) in fase1Lessons.indexed) ...[
+                if (i == 0 || i == 7 || i == 14)
+                  Padding(
+                    padding: EdgeInsets.only(top: i == 0 ? 0 : 16, bottom: 4),
+                    child: Text(
+                      switch (i) {
+                        0 => 'Bloco 1 — Reconhecimento e confiança',
+                        7 => 'Bloco 2 — Som e sílaba forte',
+                        _ => 'Bloco 3 — Da palavra à frase',
+                      },
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.secondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 Builder(builder: (context) {
                   final completed =
                       widget.store.isLessonCompleted(lesson.id);
                   final paywalled = i >= kFreeLessonCount &&
                       !widget.entitlement.hasFounderAccess;
-                  final progressionUnlocked = i == 0 ||
-                      widget.store
-                          .isLessonCompleted(fase1Lessons[i - 1].id);
+                  // O pré-requisito é a lição anterior NÃO bônus — lições
+                  // bônus nunca bloqueiam (nem precisam de) progressão.
+                  int prereq = i - 1;
+                  while (prereq >= 0 && fase1Lessons[prereq].bonus) {
+                    prereq--;
+                  }
+                  final progressionUnlocked = prereq < 0 ||
+                      widget.store.isLessonCompleted(fase1Lessons[prereq].id);
                   final unlocked = !paywalled && progressionUnlocked;
                   final String subtitle;
                   if (paywalled) {
                     subtitle = 'Beta Fundador';
                   } else if (!progressionUnlocked) {
                     subtitle = 'Conclua a lição anterior para desbloquear';
+                  } else if (lesson.bonus) {
+                    subtitle =
+                        'Bônus opcional · ${lesson.items.length} palavras · ~5 min';
                   } else {
                     subtitle = '${lesson.items.length} palavras · ~5 min';
                   }
@@ -249,13 +300,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       // Paywalled fica tocável para mostrar o aviso do gate.
                       enabled: unlocked || paywalled,
                       leading: CircleAvatar(
-                        backgroundColor:
-                            completed ? Colors.green.shade100 : null,
+                        backgroundColor: completed
+                            ? theme.colorScheme.secondary.withValues(alpha: 0.18)
+                            : theme.colorScheme.surfaceContainerHighest,
+                        foregroundColor: completed
+                            ? theme.colorScheme.secondary
+                            : theme.colorScheme.onSurface,
                         child: completed
-                            ? const Icon(Icons.check, color: Colors.green)
+                            ? const Icon(Icons.check, size: 20)
                             : Text('${i + 1}'),
                       ),
-                      title: Text(lesson.title),
+                      title: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(child: Text(lesson.title)),
+                          if (lesson.bonus) ...[
+                            const SizedBox(width: 6),
+                            Icon(Icons.star,
+                                size: 16, color: theme.colorScheme.secondary),
+                          ],
+                        ],
+                      ),
                       subtitle: Text(subtitle),
                       trailing: Icon(trailing),
                       onTap: paywalled
@@ -266,6 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                 }),
+              ],
             ],
           ),
         ),

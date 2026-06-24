@@ -1,7 +1,17 @@
 import '../models/lesson.dart';
 
-/// Lições da Fase 1 conforme docs/curriculo-fase1.md, na ordem de
-/// desbloqueio.
+/// Lições da Fase 1 ("Inglês que Você Já Conhece"), organizadas em 3 blocos
+/// pedagógicos — ver docs/curriculo-fase1.md.
+///
+/// Bloco 1 (1-7)   — Reconhecimento e confiança: vocabulário familiar.
+/// Bloco 2 (8-13)  — Som e sílaba forte: ritmo e armadilhas de pronúncia.
+/// Bloco 3 (14-20) — Da palavra à frase: chunks, cortesia e situações reais.
+///
+/// Cada bloco termina com uma revisão (obrigatória) e um bônus (opcional,
+/// `Lesson.bonus = true`): mesmo assunto do bloco, mas com palavras/frases
+/// mais difíceis. O bônus NUNCA é pré-requisito da próxima lição — a
+/// progressão pula lições bônus ao decidir o que precisa estar concluído
+/// (ver home_screen.dart).
 ///
 /// Calibração 2026-06 (ver Lesson.approvalThreshold): accuracy ≥ 75 +
 /// fonema mínimo ≥ 65 separa pronúncia razoável de aportuguesada sem
@@ -12,9 +22,14 @@ import '../models/lesson.dart';
 /// em MAIÚSCULA. As duas aparecem só no Livro Aberto (depois da 1ª tentativa).
 /// São aproximações — revisar com ouvido nativo.
 const fase1Lessons = [
-  licao01, licao02, licao03, licao04, licao05,
-  licao06, licao07, licao08, licao09, licao10,
+  licao01, licao02, licao03, licao04, licao05, licao06, licao07,
+  licao08, licao09, licao10, licao11, licao12, licao13,
+  licao14, licao15, licao16, licao17, licao18, licao19, licao20,
 ];
+
+// ---------------------------------------------------------------------------
+// BLOCO 1 — Reconhecimento e confiança
+// ---------------------------------------------------------------------------
 
 const licao01 = Lesson(
   id: 'fase1-licao01',
@@ -239,9 +254,185 @@ const licao04 = Lesson(
   ],
 );
 
-/// Lição 5 — "Trabalho": conexão com carreira.
+/// Lição 5 — "Muito fácil 2": mais palavras de alta familiaridade, para
+/// reforçar a confiança antes do bloco de ritmo e armadilhas de som.
 const licao05 = Lesson(
   id: 'fase1-licao05',
+  title: 'Muito fácil 2',
+  objective: 'Mais 5 palavras que você já reconhece — reforça a confiança '
+      'antes de focar no ritmo e nas armadilhas de som.',
+  approvalThreshold: 75,
+  items: [
+    LessonItem(
+      text: 'banana',
+      translation: 'banana',
+      example: 'I eat a banana every morning.',
+      exampleTranslation: 'Eu como uma banana toda manhã.',
+      audioAsset: 'audio/fase1/muito_facil_2/banana.mp3',
+      ipa: '/bəˈnænə/',
+      phonetic: 'ba-NÉ-na',
+    ),
+    LessonItem(
+      text: 'menu',
+      translation: 'menu / cardápio',
+      example: 'Can I see the menu, please?',
+      exampleTranslation: 'Posso ver o menu, por favor?',
+      audioAsset: 'audio/fase1/muito_facil_2/menu.mp3',
+      ipa: '/ˈmɛnjuː/',
+      phonetic: 'MÉ-niu',
+    ),
+    LessonItem(
+      text: 'gym',
+      translation: 'academia',
+      example: 'I go to the gym every day.',
+      exampleTranslation: 'Eu vou à academia todo dia.',
+      audioAsset: 'audio/fase1/muito_facil_2/gym.mp3',
+      ipa: '/dʒɪm/',
+      phonetic: 'DJIM',
+    ),
+    LessonItem(
+      text: 'mall',
+      translation: 'shopping',
+      example: "Let's meet at the mall.",
+      exampleTranslation: 'Vamos nos encontrar no shopping.',
+      audioAsset: 'audio/fase1/muito_facil_2/mall.mp3',
+      ipa: '/mɔːl/',
+      phonetic: 'MÓL',
+    ),
+    LessonItem(
+      text: 'fashion',
+      translation: 'moda',
+      example: 'She works in fashion.',
+      exampleTranslation: 'Ela trabalha com moda.',
+      audioAsset: 'audio/fase1/muito_facil_2/fashion.mp3',
+      ipa: '/ˈfæʃən/',
+      phonetic: 'FÉ-chen',
+    ),
+  ],
+);
+
+/// Lição 6 — "Revisão Bloco 1": uma palavra de cada lição do bloco,
+/// reaproveitando 100% dos áudios já gerados.
+const licao06 = Lesson(
+  id: 'fase1-licao06',
+  title: 'Revisão Bloco 1',
+  objective: 'Uma palavra de cada lição que você já fez neste bloco. '
+      'Veja como está sua pronúncia até aqui.',
+  approvalThreshold: 75,
+  items: [
+    LessonItem(
+      text: 'pizza',
+      translation: 'pizza',
+      example: 'Two pizzas for the table, please.',
+      exampleTranslation: 'Duas pizzas para a mesa, por favor.',
+      audioAsset: 'audio/fase1/licao01/pizza.mp3',
+      ipa: '/ˈpiːtsə/',
+      phonetic: 'PÍT-sa',
+    ),
+    LessonItem(
+      text: 'email',
+      translation: 'e-mail',
+      example: "I'll send you an email later.",
+      exampleTranslation: 'Te mando um e-mail depois.',
+      audioAsset: 'audio/fase1/licao02/email.mp3',
+      ipa: '/ˈiːmeɪl/',
+      phonetic: 'Í-meil',
+    ),
+    LessonItem(
+      text: 'coffee',
+      translation: 'café',
+      example: 'Can I get a coffee to go?',
+      exampleTranslation: 'Posso levar um café para viagem?',
+      audioAsset: 'audio/fase1/licao03/coffee.mp3',
+      ipa: '/ˈkɔːfi/',
+      phonetic: 'CÓ-fi',
+    ),
+    LessonItem(
+      text: 'ticket',
+      translation: 'bilhete / ingresso',
+      example: 'Where do I buy the ticket?',
+      exampleTranslation: 'Onde compro o bilhete?',
+      audioAsset: 'audio/fase1/licao04/ticket.mp3',
+      ipa: '/ˈtɪkɪt/',
+      phonetic: 'TÍ-ket',
+    ),
+    LessonItem(
+      text: 'banana',
+      translation: 'banana',
+      example: 'Do you want a banana?',
+      exampleTranslation: 'Você quer uma banana?',
+      audioAsset: 'audio/fase1/muito_facil_2/banana.mp3',
+      ipa: '/bəˈnænə/',
+      phonetic: 'ba-NÉ-na',
+    ),
+  ],
+);
+
+/// Lição 7 — BÔNUS Bloco 1 — "Desafio: vocabulário avançado". Opcional:
+/// não bloqueia a Lição 8 (a progressão olha para a Lição 6, não para esta).
+const licao07 = Lesson(
+  id: 'fase1-licao07',
+  title: 'Desafio: vocabulário avançado',
+  objective: 'Bônus opcional — mesmo assunto do bloco, palavras mais '
+      'longas. Não precisa fazer para seguir em frente.',
+  approvalThreshold: 75,
+  bonus: true,
+  items: [
+    LessonItem(
+      text: 'calendar',
+      translation: 'calendário',
+      example: 'Check the calendar for the date.',
+      exampleTranslation: 'Confira o calendário para a data.',
+      audioAsset: 'audio/fase1/bonus_vocabulario/calendar.mp3',
+      ipa: '/ˈkælɪndər/',
+      phonetic: 'KÉ-len-der',
+    ),
+    LessonItem(
+      text: 'celebrity',
+      translation: 'celebridade',
+      example: 'She became a celebrity overnight.',
+      exampleTranslation: 'Ela se tornou uma celebridade da noite para o dia.',
+      audioAsset: 'audio/fase1/bonus_vocabulario/celebrity.mp3',
+      ipa: '/səˈlɛbrəti/',
+      phonetic: 'se-LÉ-bre-ti',
+    ),
+    LessonItem(
+      text: 'vegetable',
+      translation: 'vegetal / legume',
+      example: 'Eat more vegetables.',
+      exampleTranslation: 'Coma mais vegetais.',
+      audioAsset: 'audio/fase1/bonus_vocabulario/vegetable.mp3',
+      ipa: '/ˈvɛdʒtəbəl/',
+      phonetic: 'VÉDJ-te-bou',
+    ),
+    LessonItem(
+      text: 'elevator',
+      translation: 'elevador',
+      example: 'Take the elevator to the third floor.',
+      exampleTranslation: 'Pegue o elevador até o terceiro andar.',
+      audioAsset: 'audio/fase1/bonus_vocabulario/elevator.mp3',
+      ipa: '/ˈɛləveɪtər/',
+      phonetic: 'É-le-vei-ter',
+    ),
+    LessonItem(
+      text: 'umbrella',
+      translation: 'guarda-chuva',
+      example: "Don't forget your umbrella.",
+      exampleTranslation: 'Não esqueça seu guarda-chuva.',
+      audioAsset: 'audio/fase1/bonus_vocabulario/umbrella.mp3',
+      ipa: '/ʌmˈbrɛlə/',
+      phonetic: 'am-BRÉ-la',
+    ),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// BLOCO 2 — Som e sílaba forte
+// ---------------------------------------------------------------------------
+
+/// Lição 8 — "Trabalho": conexão com carreira.
+const licao08 = Lesson(
+  id: 'fase1-licao08',
   title: 'Trabalho',
   objective: 'Inglês de carreira: 5 palavras que aparecem em toda '
       'reunião, vaga e LinkedIn.',
@@ -295,10 +486,10 @@ const licao05 = Lesson(
   ],
 );
 
-/// Lição 6 — "Ritmo diferente": palavras familiares com sílaba forte
+/// Lição 9 — "Ritmo diferente": palavras familiares com sílaba forte
 /// traiçoeira para brasileiros (foco em stress, não em vocabulário).
-const licao06 = Lesson(
-  id: 'fase1-licao06',
+const licao09 = Lesson(
+  id: 'fase1-licao09',
   title: 'Palavras com ritmo diferente',
   objective: 'Você conhece estas palavras — mas o ritmo em inglês é '
       'diferente. Ouça onde está a força e copie.',
@@ -354,9 +545,233 @@ const licao06 = Lesson(
   ],
 );
 
-/// Lição 7 — "Primeiros chunks": da palavra isolada à frase curta.
-const licao07 = Lesson(
-  id: 'fase1-licao07',
+/// Lição 10 — "Som enganoso": palavras parecidas com o português, onde o
+/// sotaque mais aparece. Foco em treinar o ouvido para a diferença de som.
+const licao10 = Lesson(
+  id: 'fase1-licao10',
+  title: 'Som enganoso',
+  objective: 'Estas palavras parecem fáceis porque são parecidas com o '
+      'português — e é exatamente aí que o sotaque aparece. Ouça com atenção.',
+  approvalThreshold: 75,
+  items: [
+    LessonItem(
+      text: 'business',
+      translation: 'negócio / empresa',
+      example: 'She has her own business.',
+      exampleTranslation: 'Ela tem o próprio negócio.',
+      audioAsset: 'audio/fase1/som_enganoso/business.mp3',
+      ipa: '/ˈbɪznəs/',
+      phonetic: 'BÍZ-nes',
+    ),
+    LessonItem(
+      text: 'interesting',
+      translation: 'interessante',
+      example: 'This book is very interesting.',
+      exampleTranslation: 'Este livro é muito interessante.',
+      audioAsset: 'audio/fase1/som_enganoso/interesting.mp3',
+      ipa: '/ˈɪntrəstɪŋ/',
+      phonetic: 'ÍN-tres-ting',
+    ),
+    LessonItem(
+      text: 'mouse',
+      translation: 'mouse (do computador)',
+      example: 'My mouse is not working.',
+      exampleTranslation: 'Meu mouse não está funcionando.',
+      audioAsset: 'audio/fase1/som_enganoso/mouse.mp3',
+      ipa: '/maʊs/',
+      phonetic: 'MÁUS',
+    ),
+    LessonItem(
+      text: 'delivery',
+      translation: 'entrega',
+      example: 'The delivery is on its way.',
+      exampleTranslation: 'A entrega está a caminho.',
+      audioAsset: 'audio/fase1/som_enganoso/delivery.mp3',
+      ipa: '/dɪˈlɪvəri/',
+      phonetic: 'di-LÍ-ve-ri',
+    ),
+    LessonItem(
+      text: 'feedback',
+      translation: 'retorno / feedback',
+      example: 'Can you give me some feedback?',
+      exampleTranslation: 'Você pode me dar um feedback?',
+      audioAsset: 'audio/fase1/som_enganoso/feedback.mp3',
+      ipa: '/ˈfiːdbæk/',
+      phonetic: 'FÍD-bék',
+    ),
+  ],
+);
+
+/// Lição 11 — "Uso diferente": palavras que o brasileiro já usa no dia a
+/// dia, mas com um significado diferente do inglês original.
+const licao11 = Lesson(
+  id: 'fase1-licao11',
+  title: 'Uso diferente',
+  objective: 'Estas palavras existem no seu dia a dia, mas o significado '
+      'em inglês não é o que você imagina. Preste atenção no sentido real.',
+  approvalThreshold: 75,
+  items: [
+    LessonItem(
+      text: 'outdoor',
+      translation: 'ao ar livre (não é "painel publicitário")',
+      example: 'I love outdoor activities.',
+      exampleTranslation: 'Eu amo atividades ao ar livre.',
+      audioAsset: 'audio/fase1/uso_diferente/outdoor.mp3',
+      ipa: '/ˈaʊtdɔːr/',
+      phonetic: 'ÁUT-dor',
+    ),
+    LessonItem(
+      text: 'notebook',
+      translation: 'caderno (não é "laptop")',
+      example: 'I wrote it in my notebook.',
+      exampleTranslation: 'Eu escrevi isso no meu caderno.',
+      audioAsset: 'audio/fase1/uso_diferente/notebook.mp3',
+      ipa: '/ˈnoʊtbʊk/',
+      phonetic: 'NÔUT-buk',
+    ),
+    LessonItem(
+      text: 'shopping',
+      translation: 'compras, a ação de comprar (não é "o shopping center")',
+      example: "I'm going shopping this afternoon.",
+      exampleTranslation: 'Eu vou fazer compras hoje de tarde.',
+      audioAsset: 'audio/fase1/uso_diferente/shopping.mp3',
+      ipa: '/ˈʃɑːpɪŋ/',
+      phonetic: 'CHÓ-pin',
+    ),
+    LessonItem(
+      text: 'home office',
+      translation: 'escritório montado em casa',
+      example: 'I have a small home office.',
+      exampleTranslation: 'Eu tenho um pequeno escritório em casa.',
+      audioAsset: 'audio/fase1/uso_diferente/home_office.mp3',
+      ipa: '/hoʊm ˈɔːfɪs/',
+      phonetic: 'rróum Ó-fis',
+    ),
+    LessonItem(
+      text: 'chips',
+      translation: 'batatinhas fritas de pacote (não é o "chip" do celular)',
+      example: 'I bought a bag of chips.',
+      exampleTranslation: 'Eu comprei um pacote de batatinhas.',
+      audioAsset: 'audio/fase1/uso_diferente/chips.mp3',
+      ipa: '/tʃɪps/',
+      phonetic: 'TCHÍPS',
+    ),
+  ],
+);
+
+/// Lição 12 — "Revisão Bloco 2": uma palavra de cada lição do bloco.
+const licao12 = Lesson(
+  id: 'fase1-licao12',
+  title: 'Revisão Bloco 2',
+  objective: 'Uma palavra de cada lição deste bloco — ritmo, sílaba forte '
+      'e os sons que mais enganam o ouvido brasileiro.',
+  approvalThreshold: 75,
+  items: [
+    LessonItem(
+      text: 'job',
+      translation: 'emprego / trabalho',
+      example: 'I start my new job on Monday.',
+      exampleTranslation: 'Eu começo meu novo trabalho na segunda.',
+      audioAsset: 'audio/fase1/licao05/job.mp3',
+      ipa: '/dʒɑːb/',
+      phonetic: 'DJÓB',
+    ),
+    LessonItem(
+      text: 'comfortable',
+      translation: 'confortável',
+      example: 'Make yourself comfortable.',
+      exampleTranslation: 'Fique à vontade.',
+      audioAsset: 'audio/fase1/licao06/comfortable.mp3',
+      ipa: '/ˈkʌmftərbəl/',
+      phonetic: 'CÂMF-ter-bou',
+    ),
+    LessonItem(
+      text: 'business',
+      translation: 'negócio / empresa',
+      example: "It's a family business.",
+      exampleTranslation: 'É um negócio de família.',
+      audioAsset: 'audio/fase1/som_enganoso/business.mp3',
+      ipa: '/ˈbɪznəs/',
+      phonetic: 'BÍZ-nes',
+    ),
+    LessonItem(
+      text: 'shopping',
+      translation: 'compras (a ação de comprar)',
+      example: 'We went shopping yesterday.',
+      exampleTranslation: 'Nós fomos fazer compras ontem.',
+      audioAsset: 'audio/fase1/uso_diferente/shopping.mp3',
+      ipa: '/ˈʃɑːpɪŋ/',
+      phonetic: 'CHÓ-pin',
+    ),
+  ],
+);
+
+/// Lição 13 — BÔNUS Bloco 2 — "Desafio: ritmo avançado". Opcional: não
+/// bloqueia a Lição 14 (a progressão olha para a Lição 12, não para esta).
+const licao13 = Lesson(
+  id: 'fase1-licao13',
+  title: 'Desafio: ritmo avançado',
+  objective: 'Bônus opcional — palavras mais longas com sílaba forte '
+      'traiçoeira. Não precisa fazer para seguir em frente.',
+  approvalThreshold: 75,
+  minProsody: 70,
+  bonus: true,
+  items: [
+    LessonItem(
+      text: 'necessary',
+      translation: 'necessário',
+      example: 'Water is necessary for life.',
+      exampleTranslation: 'Água é necessária para a vida.',
+      audioAsset: 'audio/fase1/bonus_ritmo/necessary.mp3',
+      ipa: '/ˈnɛsəsɛri/',
+      phonetic: 'NÉ-se-se-ri',
+    ),
+    LessonItem(
+      text: 'temperature',
+      translation: 'temperatura',
+      example: "What's the temperature today?",
+      exampleTranslation: 'Qual é a temperatura hoje?',
+      audioAsset: 'audio/fase1/bonus_ritmo/temperature.mp3',
+      ipa: '/ˈtɛmprətʃər/',
+      phonetic: 'TÉM-pre-tcher',
+    ),
+    LessonItem(
+      text: 'government',
+      translation: 'governo',
+      example: 'The government announced new rules.',
+      exampleTranslation: 'O governo anunciou novas regras.',
+      audioAsset: 'audio/fase1/bonus_ritmo/government.mp3',
+      ipa: '/ˈɡʌvərmənt/',
+      phonetic: 'GÂ-ver-ment',
+    ),
+    LessonItem(
+      text: 'photography',
+      translation: 'fotografia',
+      example: 'Photography is her passion.',
+      exampleTranslation: 'Fotografia é a paixão dela.',
+      audioAsset: 'audio/fase1/bonus_ritmo/photography.mp3',
+      ipa: '/fəˈtɑːɡrəfi/',
+      phonetic: 'fo-TÓ-gra-fi',
+    ),
+    LessonItem(
+      text: 'vocabulary',
+      translation: 'vocabulário',
+      example: 'Reading improves your vocabulary.',
+      exampleTranslation: 'Ler melhora seu vocabulário.',
+      audioAsset: 'audio/fase1/bonus_ritmo/vocabulary.mp3',
+      ipa: '/voʊˈkæbjʊlɛri/',
+      phonetic: 'vo-KÉ-biu-le-ri',
+    ),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// BLOCO 3 — Da palavra à frase
+// ---------------------------------------------------------------------------
+
+/// Lição 14 — "Primeiros chunks": da palavra isolada à frase curta.
+const licao14 = Lesson(
+  id: 'fase1-licao14',
   title: 'Primeiros chunks',
   objective: 'Agora você sai da palavra solta: 5 frases curtas que '
       'saem prontas, sem montar palavra por palavra.',
@@ -410,9 +825,9 @@ const licao07 = Lesson(
   ],
 );
 
-/// Lição 8 — "Frases de cortesia": comunicação imediata.
-const licao08 = Lesson(
-  id: 'fase1-licao08',
+/// Lição 15 — "Frases de cortesia": comunicação imediata.
+const licao15 = Lesson(
+  id: 'fase1-licao15',
   title: 'Frases de cortesia',
   objective: 'As frases que destravam qualquer conversa: educação '
       'funciona em qualquer país.',
@@ -466,9 +881,9 @@ const licao08 = Lesson(
   ],
 );
 
-/// Lição 9 — "Pequenos pedidos": fala funcional.
-const licao09 = Lesson(
-  id: 'fase1-licao09',
+/// Lição 16 — "Pequenos pedidos": fala funcional.
+const licao16 = Lesson(
+  id: 'fase1-licao16',
   title: 'Pequenos pedidos',
   objective: 'Pedir é a fala mais útil que existe: café, ajuda e '
       'tempo — tudo em frases prontas.',
@@ -522,59 +937,229 @@ const licao09 = Lesson(
   ],
 );
 
-/// Lição 10 — "Revisão guiada": mistura das lições anteriores,
-/// reusando os áudios já gerados (consolidação de hábito).
-const licao10 = Lesson(
-  id: 'fase1-licao10',
-  title: 'Revisão guiada',
-  objective: 'Tudo que você já treinou, misturado: prove pra você '
-      'mesmo o quanto avançou.',
+/// Lição 17 — "Casa e lazer": vocabulário doméstico e de tempo livre.
+const licao17 = Lesson(
+  id: 'fase1-licao17',
+  title: 'Casa e lazer',
+  objective: 'Palavras de casa e do tempo livre que você já usa em '
+      'português — hora de acertar o som em inglês.',
   approvalThreshold: 75,
   items: [
     LessonItem(
-      text: 'hospital',
-      translation: 'hospital',
-      example: 'The hospital is open all night.',
-      exampleTranslation: 'O hospital fica aberto a noite toda.',
-      audioAsset: 'audio/fase1/licao06/hospital.mp3',
-      ipa: '/ˈhɑːspɪtəl/',
-      phonetic: 'RRÓS-pi-tou',
+      text: 'closet',
+      translation: 'armário / guarda-roupa',
+      example: 'Put your clothes in the closet.',
+      exampleTranslation: 'Coloque suas roupas no armário.',
+      audioAsset: 'audio/fase1/casa_lazer/closet.mp3',
+      ipa: '/ˈklɑːzət/',
+      phonetic: 'KLÓ-zet',
     ),
     LessonItem(
-      text: 'coffee',
-      translation: 'café',
-      example: 'I need a coffee right now.',
-      exampleTranslation: 'Eu preciso de um café agora.',
-      audioAsset: 'audio/fase1/licao03/coffee.mp3',
-      ipa: '/ˈkɔːfi/',
-      phonetic: 'CÓ-fi',
+      text: 'freezer',
+      translation: 'freezer / congelador',
+      example: 'The ice cream is in the freezer.',
+      exampleTranslation: 'O sorvete está no freezer.',
+      audioAsset: 'audio/fase1/casa_lazer/freezer.mp3',
+      ipa: '/ˈfriːzər/',
+      phonetic: 'FRÍ-zer',
     ),
     LessonItem(
-      text: 'airport',
-      translation: 'aeroporto',
-      example: 'The airport is far from here.',
-      exampleTranslation: 'O aeroporto é longe daqui.',
-      audioAsset: 'audio/fase1/licao04/airport.mp3',
-      ipa: '/ˈɛrpɔːrt/',
-      phonetic: 'ÉR-port',
+      text: 'playground',
+      translation: 'parquinho',
+      example: 'The kids are at the playground.',
+      exampleTranslation: 'As crianças estão no parquinho.',
+      audioAsset: 'audio/fase1/casa_lazer/playground.mp3',
+      ipa: '/ˈpleɪɡraʊnd/',
+      phonetic: 'PLÊI-gráund',
     ),
     LessonItem(
-      text: 'I need it',
-      translation: 'eu preciso (disso)',
-      example: 'Where is my phone? I need it.',
-      exampleTranslation: 'Cadê meu celular? Eu preciso dele.',
-      audioAsset: 'audio/fase1/licao07/I_need_it.mp3',
-      ipa: '/aɪ ˈniːd ɪt/',
-      phonetic: 'ai NÍD it',
+      text: 'babysitter',
+      translation: 'babá',
+      example: 'I need a babysitter tonight.',
+      exampleTranslation: 'Eu preciso de uma babá hoje à noite.',
+      audioAsset: 'audio/fase1/casa_lazer/babysitter.mp3',
+      ipa: '/ˈbeɪbiˌsɪtər/',
+      phonetic: 'BÉI-bi-si-ter',
+    ),
+    LessonItem(
+      text: 'happy hour',
+      translation: 'happy hour (promoção de bebidas no fim do dia)',
+      example: "Let's go for happy hour after work.",
+      exampleTranslation: 'Vamos no happy hour depois do trabalho.',
+      audioAsset: 'audio/fase1/casa_lazer/happy_hour.mp3',
+      ipa: '/ˈhæpi aʊər/',
+      phonetic: 'RRÉ-pi áuer',
+    ),
+  ],
+);
+
+/// Lição 18 — "Compras e dinheiro": inglês prático de consumo.
+const licao18 = Lesson(
+  id: 'fase1-licao18',
+  title: 'Compras e dinheiro',
+  objective: 'Inglês prático para qualquer loja: pagar, pedir desconto '
+      'e usar cupom sem travar.',
+  approvalThreshold: 75,
+  items: [
+    LessonItem(
+      text: 'cash',
+      translation: 'dinheiro (em espécie)',
+      example: 'Do you accept cash?',
+      exampleTranslation: 'Vocês aceitam dinheiro?',
+      audioAsset: 'audio/fase1/compras_dinheiro/cash.mp3',
+      ipa: '/kæʃ/',
+      phonetic: 'KÉSH',
+    ),
+    LessonItem(
+      text: 'credit card',
+      translation: 'cartão de crédito',
+      example: "I'll pay with credit card.",
+      exampleTranslation: 'Eu vou pagar com cartão de crédito.',
+      audioAsset: 'audio/fase1/compras_dinheiro/credit_card.mp3',
+      ipa: '/ˈkrɛdɪt kɑːrd/',
+      phonetic: 'KRÉ-dit kárd',
+    ),
+    LessonItem(
+      text: 'discount',
+      translation: 'desconto',
+      example: 'Is there a discount today?',
+      exampleTranslation: 'Tem desconto hoje?',
+      audioAsset: 'audio/fase1/compras_dinheiro/discount.mp3',
+      ipa: '/ˈdɪskaʊnt/',
+      phonetic: 'DÍS-káunt',
+    ),
+    LessonItem(
+      text: 'voucher',
+      translation: 'vale / cupom',
+      example: 'I have a voucher for this store.',
+      exampleTranslation: 'Eu tenho um voucher para esta loja.',
+      audioAsset: 'audio/fase1/compras_dinheiro/voucher.mp3',
+      ipa: '/ˈvaʊtʃər/',
+      phonetic: 'VÁU-tcher',
+    ),
+    LessonItem(
+      text: 'cashback',
+      translation: 'dinheiro de volta',
+      example: 'This app gives cashback on purchases.',
+      exampleTranslation: 'Esse aplicativo dá cashback nas compras.',
+      audioAsset: 'audio/fase1/compras_dinheiro/cashback.mp3',
+      ipa: '/ˈkæʃbæk/',
+      phonetic: 'KÉSH-bék',
+    ),
+  ],
+);
+
+/// Lição 19 — "Revisão final": uma palavra de cada lição deste bloco,
+/// fecha o básico (Fase 1).
+const licao19 = Lesson(
+  id: 'fase1-licao19',
+  title: 'Revisão final',
+  objective: 'Uma palavra de cada lição deste bloco — feche o básico '
+      'vendo o quanto sua fala evoluiu desde a lição 1.',
+  approvalThreshold: 75,
+  items: [
+    LessonItem(
+      text: 'I like it',
+      translation: 'eu gosto (disso)',
+      example: 'This food is great. I like it!',
+      exampleTranslation: 'Essa comida é ótima. Eu gosto!',
+      audioAsset: 'audio/fase1/licao07/I_like_it.mp3',
+      ipa: '/aɪ ˈlaɪk ɪt/',
+      phonetic: 'ai LÁIK it',
     ),
     LessonItem(
       text: 'Thank you',
       translation: 'obrigado(a)',
-      example: 'Thank you so much!',
-      exampleTranslation: 'Muito obrigado!',
+      example: 'Thank you for your help.',
+      exampleTranslation: 'Obrigado pela sua ajuda.',
       audioAsset: 'audio/fase1/licao08/Thank_you.mp3',
       ipa: '/ˈθæŋk juː/',
       phonetic: 'TÉNK iu',
+    ),
+    LessonItem(
+      text: 'Can I have a coffee?',
+      translation: 'Posso pedir um café?',
+      example: 'Can I have a coffee, please?',
+      exampleTranslation: 'Posso pedir um café, por favor?',
+      audioAsset: 'audio/fase1/licao09/Can_I_have_a_coffee.mp3',
+      ipa: '/kæn aɪ hæv ə ˈkɔːfi/',
+      phonetic: 'ken ai RÉV a CÓ-fi',
+    ),
+    LessonItem(
+      text: 'closet',
+      translation: 'armário / guarda-roupa',
+      example: 'My closet is full of clothes.',
+      exampleTranslation: 'Meu armário está cheio de roupas.',
+      audioAsset: 'audio/fase1/casa_lazer/closet.mp3',
+      ipa: '/ˈklɑːzət/',
+      phonetic: 'KLÓ-zet',
+    ),
+    LessonItem(
+      text: 'cash',
+      translation: 'dinheiro (em espécie)',
+      example: "I'll pay in cash.",
+      exampleTranslation: 'Eu vou pagar em dinheiro.',
+      audioAsset: 'audio/fase1/compras_dinheiro/cash.mp3',
+      ipa: '/kæʃ/',
+      phonetic: 'KÉSH',
+    ),
+  ],
+);
+
+/// Lição 20 — BÔNUS Bloco 3 — "Desafio: pedidos mais longos". Opcional:
+/// fecha o básico para quem quer ir além do mínimo.
+const licao20 = Lesson(
+  id: 'fase1-licao20',
+  title: 'Desafio: pedidos mais longos',
+  objective: 'Bônus opcional — frases mais longas e educadas para usar em '
+      'qualquer loja ou atendimento. Fecha o básico para quem quer mais.',
+  approvalThreshold: 75,
+  bonus: true,
+  items: [
+    LessonItem(
+      text: 'Could you help me, please',
+      translation: 'você poderia me ajudar, por favor?',
+      example: 'Excuse me, could you help me, please?',
+      exampleTranslation: 'Com licença, você poderia me ajudar, por favor?',
+      audioAsset: 'audio/fase1/bonus_pedidos/Could_you_help_me,_please.mp3',
+      ipa: '/kʊd ju hɛlp miː pliːz/',
+      phonetic: 'kud iu RRÉLP mi plíz',
+    ),
+    LessonItem(
+      text: "I'd like to order a coffee",
+      translation: 'eu gostaria de pedir um café',
+      example: "I'd like to order a coffee, please.",
+      exampleTranslation: 'Eu gostaria de pedir um café, por favor.',
+      audioAsset: "audio/fase1/bonus_pedidos/I'd_like_to_order_a_coffee.mp3",
+      ipa: '/aɪd laɪk tu ˈɔːrdər ə ˈkɔːfi/',
+      phonetic: 'aid LÁIK tu ÓR-der e CÓ-fi',
+    ),
+    LessonItem(
+      text: 'Do you have a discount',
+      translation: 'vocês têm desconto?',
+      example: 'Do you have a discount for cash?',
+      exampleTranslation: 'Vocês têm desconto para pagamento em dinheiro?',
+      audioAsset: 'audio/fase1/bonus_pedidos/Do_you_have_a_discount.mp3',
+      ipa: '/du ju hæv ə ˈdɪskaʊnt/',
+      phonetic: 'du iu rrév e DÍS-kaunt',
+    ),
+    LessonItem(
+      text: 'Where is the restroom',
+      translation: 'onde é o banheiro?',
+      example: 'Excuse me, where is the restroom?',
+      exampleTranslation: 'Com licença, onde é o banheiro?',
+      audioAsset: 'audio/fase1/bonus_pedidos/Where_is_the_restroom.mp3',
+      ipa: '/wɛr ɪz ðə ˈrɛstruːm/',
+      phonetic: 'uér iz de RÉST-rum',
+    ),
+    LessonItem(
+      text: 'Can I get a receipt',
+      translation: 'posso pegar um recibo?',
+      example: 'Can I get a receipt, please?',
+      exampleTranslation: 'Posso pegar um recibo, por favor?',
+      audioAsset: 'audio/fase1/bonus_pedidos/Can_I_get_a_receipt.mp3',
+      ipa: '/kæn aɪ ɡɛt ə rɪˈsiːt/',
+      phonetic: 'ken ai guét e ri-SÍT',
     ),
   ],
 );

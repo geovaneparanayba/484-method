@@ -18,8 +18,12 @@ Métrica norte do produto: **minutos de prática oral APROVADA**, nunca tempo de
 - ✅ Auth: **Supabase Auth** (decidido e em produção) — sign-in anônimo, cada
   usuário ganha um id estável sem cadastro. Progresso e eventos no Postgres
   com RLS por user_id; degrada para local-only sem credenciais.
-- Fase 1 "Inglês que Você Já Conhece": 10 microlições de 5–10 min
-  (matriz completa em docs/curriculo-fase1.md)
+- Fase 1 "Inglês que Você Já Conhece": 17 microlições obrigatórias de 5–10
+  min, em 3 blocos pedagógicos internos — reconhecimento/confiança, som/
+  sílaba forte, palavra/frase — mais 3 lições BÔNUS opcionais (uma por
+  bloco, `Lesson.bonus = true`, palavras/frases mais difíceis do mesmo
+  assunto, nunca exigidas para progredir) — 20 lições no total (matriz
+  completa em docs/curriculo-fase1.md)
 - ✅ Loop core completo: áudio pré-gerado → gravação → Azure Pronunciation
   Assessment → feedback pedagógico em PT-BR → liberação da escrita → regravação
 - ✅ Feedback gerado pela Claude API via Edge Function (fallback p/ mensagens
@@ -77,9 +81,13 @@ Métrica norte do produto: **minutos de prática oral APROVADA**, nunca tempo de
 - Feedback nunca diz só "errado" — sempre indica o que tentar corrigir. A
   mensagem fixa aparece na hora e é trocada pela da Claude quando chega; sem
   rede/chave fica a fixa (o app nunca depende da Claude para funcionar)
-- Paywall: as 3 primeiras lições da Fase 1 são grátis (`kFreeLessonCount`);
-  da 4ª em diante exige acesso "Beta Fundador". Gating passa SEMPRE pela
-  interface `EntitlementService` — nunca checar compra direto da UI
+- Paywall: as 18 primeiras lições da Fase 1 são grátis (`kFreeLessonCount`);
+  só as 2 últimas (Revisão final + seu bônus) exigem acesso "Beta Fundador".
+  Gating passa SEMPRE pela interface `EntitlementService` — nunca checar
+  compra direto da UI
+- Lições bônus (`Lesson.bonus`) nunca são pré-requisito de progressão: a
+  lição N exige a lição anterior NÃO bônus concluída, não literalmente N-1
+  (ver home_screen.dart)
 - Tom adulto, direto, encorajador; sem infantilizar, sem prometer fluência
 - LGPD: gravação de voz é dado sensível — consentimento explícito antes da
   primeira gravação, política de retenção/exclusão definida, exclusão de conta

@@ -17,7 +17,7 @@ abstract interface class EntitlementService {
 }
 
 /// Quantas lições da Fase 1 ficam liberadas sem o Beta Fundador.
-const int kFreeLessonCount = 7;
+const int kFreeLessonCount = 18;
 
 /// Implementação local (web/dev): persiste o acesso em SharedPreferences,
 /// permitindo testar os dois estados sem loja. Default: sem acesso.

@@ -11,10 +11,16 @@ class Lesson {
     required this.items,
     this.minPhoneme = 65,
     this.minProsody,
+    this.bonus = false,
   });
 
   final String id;
   final String title;
+
+  /// Lição opcional: não é exigida para desbloquear a próxima lição do
+  /// currículo principal. Mesmo bloco e assunto, mas com palavras/frases
+  /// mais difíceis — para quem quer ir além do básico.
+  final bool bonus;
 
   /// Explicado ao aluno em uma frase no início (etapa 1 do template).
   final String objective;

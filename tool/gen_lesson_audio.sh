@@ -37,4 +37,12 @@ gen licao06 "hospital" "chocolate" "camera" "restaurant" "comfortable"
 gen licao07 "I like it" "I need it" "I want this" "I love it" "I got it"
 gen licao08 "Thank you" "See you" "Excuse me" "It's okay" "No problem"
 gen licao09 "Can I have a coffee" "I need help" "One coffee, please" "Can you help me" "Just a minute"
-# Lição 10 (revisão) reusa áudios das lições anteriores — nada a gerar.
+gen muito_facil_2 "banana" "menu" "gym" "mall" "fashion"
+gen som_enganoso "business" "interesting" "mouse" "delivery" "feedback"
+gen uso_diferente "outdoor" "notebook" "shopping" "home office" "chips"
+gen casa_lazer "closet" "freezer" "playground" "babysitter" "happy hour"
+gen compras_dinheiro "cash" "credit card" "discount" "voucher" "cashback"
+gen bonus_vocabulario "calendar" "celebrity" "vegetable" "elevator" "umbrella"
+gen bonus_ritmo "necessary" "temperature" "government" "photography" "vocabulary"
+gen bonus_pedidos "Could you help me, please" "I'd like to order a coffee" "Do you have a discount" "Where is the restroom" "Can I get a receipt"
+# Lições de revisão (06, 12, 19) reusam áudios das lições anteriores — nada a gerar.

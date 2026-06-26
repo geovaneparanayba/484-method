@@ -1,12 +1,16 @@
 import '../models/lesson.dart';
 
-/// Lições da Fase 1 ("Inglês que Você Já Conhece"), organizadas em 3 blocos
+/// Lições da Fase 1 ("Inglês que Você Já Conhece"), organizadas em 4 blocos
 /// pedagógicos — ver docs/curriculo-fase1.md.
 ///
-/// Bloco 1 (1-7)   — Reconhecimento e confiança: vocabulário familiar.
-/// Bloco 2 (8-13)  — Som e sílaba forte: ritmo e armadilhas de pronúncia.
-/// Bloco 3 (14-20) — Da palavra à frase: chunks, cortesia e situações reais.
-/// Bloco 4 (21-27) — Conversa do dia a dia: small talk, saudações e planos.
+/// Bloco 1 — Reconhecimento e confiança: vocabulário familiar.
+/// Bloco 2 — Som e sílaba forte: ritmo e armadilhas de pronúncia.
+/// Bloco 3 — Da palavra à frase: chunks, cortesia e situações reais.
+/// Bloco 4 — Conversa do dia a dia: small talk, saudações e planos.
+///
+/// Os ids (`fase1-licaoNN`) têm lacunas: licao05 ("Muito fácil 2") e
+/// licao08 ("Trabalho") foram removidas do currículo, mas os nomes não
+/// foram renumerados para não invalidar progresso já salvo por id.
 ///
 /// Cada bloco termina com uma revisão (obrigatória) e um bônus (opcional,
 /// `Lesson.bonus = true`): mesmo assunto do bloco, mas com palavras/frases
@@ -23,8 +27,8 @@ import '../models/lesson.dart';
 /// em MAIÚSCULA. As duas aparecem só no Livro Aberto (depois da 1ª tentativa).
 /// São aproximações — revisar com ouvido nativo.
 const fase1Lessons = [
-  licao01, licao02, licao03, licao04, licao05, licao06, licao07,
-  licao08, licao09, licao10, licao11, licao12, licao13,
+  licao01, licao02, licao03, licao04, licao06, licao07,
+  licao09, licao10, licao11, licao12, licao13,
   licao14, licao15, licao16, licao17, licao18, licao19, licao20,
   licao21, licao22, licao23, licao24, licao25, licao26, licao27,
 ];
@@ -256,63 +260,6 @@ const licao04 = Lesson(
   ],
 );
 
-/// Lição 5 — "Muito fácil 2": mais palavras de alta familiaridade, para
-/// reforçar a confiança antes do bloco de ritmo e armadilhas de som.
-const licao05 = Lesson(
-  id: 'fase1-licao05',
-  title: 'Muito fácil 2',
-  objective: 'Mais 5 palavras que você já reconhece — reforça a confiança '
-      'antes de focar no ritmo e nas armadilhas de som.',
-  approvalThreshold: 75,
-  items: [
-    LessonItem(
-      text: 'banana',
-      translation: 'banana',
-      example: 'I eat a banana every morning.',
-      exampleTranslation: 'Eu como uma banana toda manhã.',
-      audioAsset: 'audio/fase1/muito_facil_2/banana.mp3',
-      ipa: '/bəˈnænə/',
-      phonetic: 'ba-NÉ-na',
-    ),
-    LessonItem(
-      text: 'menu',
-      translation: 'menu / cardápio',
-      example: 'Can I see the menu, please?',
-      exampleTranslation: 'Posso ver o menu, por favor?',
-      audioAsset: 'audio/fase1/muito_facil_2/menu.mp3',
-      ipa: '/ˈmɛnjuː/',
-      phonetic: 'MÉ-niu',
-    ),
-    LessonItem(
-      text: 'gym',
-      translation: 'academia',
-      example: 'I go to the gym every day.',
-      exampleTranslation: 'Eu vou à academia todo dia.',
-      audioAsset: 'audio/fase1/muito_facil_2/gym.mp3',
-      ipa: '/dʒɪm/',
-      phonetic: 'DJIM',
-    ),
-    LessonItem(
-      text: 'mall',
-      translation: 'shopping',
-      example: "Let's meet at the mall.",
-      exampleTranslation: 'Vamos nos encontrar no shopping.',
-      audioAsset: 'audio/fase1/muito_facil_2/mall.mp3',
-      ipa: '/mɔːl/',
-      phonetic: 'MÓL',
-    ),
-    LessonItem(
-      text: 'fashion',
-      translation: 'moda',
-      example: 'She works in fashion.',
-      exampleTranslation: 'Ela trabalha com moda.',
-      audioAsset: 'audio/fase1/muito_facil_2/fashion.mp3',
-      ipa: '/ˈfæʃən/',
-      phonetic: 'FÉ-chen',
-    ),
-  ],
-);
-
 /// Lição 6 — "Revisão Bloco 1": uma palavra de cada lição do bloco,
 /// reaproveitando 100% dos áudios já gerados.
 const licao06 = Lesson(
@@ -431,62 +378,6 @@ const licao07 = Lesson(
 // ---------------------------------------------------------------------------
 // BLOCO 2 — Som e sílaba forte
 // ---------------------------------------------------------------------------
-
-/// Lição 8 — "Trabalho": conexão com carreira.
-const licao08 = Lesson(
-  id: 'fase1-licao08',
-  title: 'Trabalho',
-  objective: 'Inglês de carreira: 5 palavras que aparecem em toda '
-      'reunião, vaga e LinkedIn.',
-  approvalThreshold: 75,
-  items: [
-    LessonItem(
-      text: 'meeting',
-      translation: 'reunião',
-      example: 'The meeting starts at ten.',
-      exampleTranslation: 'A reunião começa às dez.',
-      audioAsset: 'audio/fase1/licao05/meeting.mp3',
-      ipa: '/ˈmiːtɪŋ/',
-      phonetic: 'MÍ-tin',
-    ),
-    LessonItem(
-      text: 'manager',
-      translation: 'gerente / gestor',
-      example: 'She is my manager.',
-      exampleTranslation: 'Ela é minha gestora.',
-      audioAsset: 'audio/fase1/licao05/manager.mp3',
-      ipa: '/ˈmænɪdʒər/',
-      phonetic: 'MÉ-ne-djer',
-    ),
-    LessonItem(
-      text: 'project',
-      translation: 'projeto',
-      example: 'This project is important.',
-      exampleTranslation: 'Este projeto é importante.',
-      audioAsset: 'audio/fase1/licao05/project.mp3',
-      ipa: '/ˈprɑːdʒɛkt/',
-      phonetic: 'PRÓ-djekt',
-    ),
-    LessonItem(
-      text: 'office',
-      translation: 'escritório',
-      example: 'I work at the office on Mondays.',
-      exampleTranslation: 'Eu trabalho no escritório às segundas.',
-      audioAsset: 'audio/fase1/licao05/office.mp3',
-      ipa: '/ˈɔːfɪs/',
-      phonetic: 'Ó-fis',
-    ),
-    LessonItem(
-      text: 'job',
-      translation: 'emprego / trabalho',
-      example: 'I love my job.',
-      exampleTranslation: 'Eu amo meu trabalho.',
-      audioAsset: 'audio/fase1/licao05/job.mp3',
-      ipa: '/dʒɑːb/',
-      phonetic: 'DJÓB',
-    ),
-  ],
-);
 
 /// Lição 9 — "Ritmo diferente": palavras familiares com sílaba forte
 /// traiçoeira para brasileiros (foco em stress, não em vocabulário).

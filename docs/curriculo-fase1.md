@@ -28,12 +28,15 @@ comerciais novas — Fase 1 continua sendo um único módulo/oferta):
 | Familiar com som enganoso | business, comfortable, interesting, manager, project | Reduzir pronúncia aportuguesada |
 | Familiar com uso diferente | outdoor, notebook, shopping, home office, chips | Explicar uso real quando necessário |
 
-## As 27 microlições (5–10 min cada): 23 obrigatórias + 4 bônus opcionais
+## As 25 microlições (5–10 min cada): 21 obrigatórias + 4 bônus opcionais
 
 Cada bloco termina com uma revisão (obrigatória) e um bônus (`Lesson.bonus =
 true`, opcional): mesmo assunto do bloco, palavras/frases mais difíceis. O
 bônus nunca é pré-requisito da próxima lição — a progressão pula direto para
 ela a partir da revisão anterior.
+
+Numeração abaixo é a posição real no app (sequencial, sem buracos). Os ids
+internos (`fase1-licaoNN`) têm lacunas — ver comentário em `lib/data/fase1.dart`.
 
 ### Bloco 1 — Reconhecimento e confiança
 
@@ -43,44 +46,42 @@ ela a partir da revisão anterior.
 | 2 | Palavras do celular | app, online, email, login, video | Inglês digital cotidiano | Accuracy leve + completude |
 | 3 | Comida | coffee, burger, sandwich, cake, water | Vocabulário simples e útil | Repetição clara, finalizar a palavra |
 | 4 | Viagem | airport, taxi, bus, passport, ticket | Inglês de sobrevivência | Pronúncia + associação com situação |
-| 5 | Muito fácil 2 | banana, menu, gym, mall, fashion | Reforço de confiança | Repetição clara |
-| 6 | Revisão Bloco 1 | 1 item de cada lição 1–5 | Progresso visível | Minutos aprovados |
-| 7 | **Bônus** — Desafio: vocabulário avançado | calendar, celebrity, vegetable, elevator, umbrella | Vocabulário mais longo, mesmo assunto | Accuracy + fonema mínimo (opcional) |
+| 5 | Revisão Bloco 1 | 1 item de cada lição 1–4 | Progresso visível | Minutos aprovados |
+| 6 | **Bônus** — Desafio: vocabulário avançado | calendar, celebrity, vegetable, elevator, umbrella | Vocabulário mais longo, mesmo assunto | Accuracy + fonema mínimo (opcional) |
 
 ### Bloco 2 — Som e sílaba forte
 
 | # | Tema | Palavras/frases | Foco | Critério de aprovação |
 |---|---|---|---|---|
-| 8 | Trabalho | meeting, manager, project, office, job | Conexão com carreira | Stress básico e clareza |
-| 9 | Ritmo diferente | hospital, chocolate, camera, restaurant, comfortable | Sílaba forte e redução | Repetir com sílaba forte correta (minProsody) |
-| 10 | Som enganoso | business, interesting, mouse, delivery, feedback | Reduzir pronúncia aportuguesada | Accuracy + fonema mínimo |
-| 11 | Uso diferente | outdoor, notebook, shopping, home office, chips | Significado real no inglês | Accuracy + compreensão do uso |
-| 12 | Revisão Bloco 2 | 1 item de cada lição 8–11 | Progresso visível | Minutos aprovados |
-| 13 | **Bônus** — Desafio: ritmo avançado | necessary, temperature, government, photography, vocabulary | Sílaba forte traiçoeira, palavras longas | minProsody (opcional) |
+| 7 | Ritmo diferente | hospital, chocolate, camera, restaurant, comfortable | Sílaba forte e redução | Repetir com sílaba forte correta (minProsody) |
+| 8 | Som enganoso | business, interesting, mouse, delivery, feedback | Reduzir pronúncia aportuguesada | Accuracy + fonema mínimo |
+| 9 | Uso diferente | outdoor, notebook, shopping, home office, chips | Significado real no inglês | Accuracy + compreensão do uso |
+| 10 | Revisão Bloco 2 | 1 item de cada lição 7–9 | Progresso visível | Minutos aprovados |
+| 11 | **Bônus** — Desafio: ritmo avançado | necessary, temperature, government, photography, vocabulary | Sílaba forte traiçoeira, palavras longas | minProsody (opcional) |
 
 ### Bloco 3 — Da palavra à frase
 
 | # | Tema | Palavras/frases | Foco | Critério de aprovação |
 |---|---|---|---|---|
-| 14 | Primeiros chunks | I like it, I need it, I want this, I love it, I got it | Da palavra isolada à frase curta | Completeness + fluency |
-| 15 | Frases de cortesia | Thank you, See you, Excuse me, It's okay, No problem | Comunicação imediata | Completeness + fluency |
-| 16 | Pequenos pedidos | Can I have a coffee, I need help, One coffee please, Can you help me, Just a minute | Fala funcional | Completeness + fluency |
-| 17 | Casa e lazer | closet, freezer, playground, babysitter, happy hour | Vocabulário doméstico e social | Accuracy + completude |
-| 18 | Compras e dinheiro | cash, credit card, discount, voucher, cashback | Inglês prático de consumo | Accuracy + completude |
-| 19 | Revisão final | 1 item de cada lição 14–18 | Fecha o básico, evolução visível | Minutos aprovados, evolução visível |
-| 20 | **Bônus** — Desafio: pedidos mais longos | Could you help me please, I'd like to order a coffee, Do you have a discount, Where is the restroom, Can I get a receipt | Pedidos educados mais longos | Completeness + fluency (opcional) |
+| 12 | Primeiros chunks | I like it, I need it, I want this, I love it, I got it | Da palavra isolada à frase curta | Completeness + fluency |
+| 13 | Frases de cortesia | Thank you, See you, Excuse me, It's okay, No problem | Comunicação imediata | Completeness + fluency |
+| 14 | Pequenos pedidos | Can I have a coffee, I need help, One coffee please, Can you help me, Just a minute | Fala funcional | Completeness + fluency |
+| 15 | Casa e lazer | closet, freezer, playground, babysitter, happy hour | Vocabulário doméstico e social | Accuracy + completude |
+| 16 | Compras e dinheiro | cash, credit card, discount, voucher, cashback | Inglês prático de consumo | Accuracy + completude |
+| 17 | Revisão final | 1 item de cada lição 12–16 | Fecha o básico, evolução visível | Minutos aprovados, evolução visível |
+| 18 | **Bônus** — Desafio: pedidos mais longos | Could you help me please, I'd like to order a coffee, Do you have a discount, Where is the restroom, Can I get a receipt | Pedidos educados mais longos | Completeness + fluency (opcional) |
 
 ### Bloco 4 — Conversa do dia a dia
 
 | # | Tema | Palavras/frases | Foco | Critério de aprovação |
 |---|---|---|---|---|
-| 21 | Variações de "How are you?" | How are you?, How are you doing?, How's it going?, How have you been?, How's your day going? | Abrir qualquer conversa | Completeness + fluency |
-| 22 | Respondendo que está bem | I'm good thanks, I'm doing well, I'm great thank you, Pretty good actually, I'm feeling good today | Resposta automática ao "how are you" | Completeness + fluency |
-| 23 | Falando do dia / weather | It's sunny today, It's a bit cloudy today, It's really hot today, It's a little cold today, The weather is nice today | Small talk universal | Accuracy + completude |
-| 24 | "It's a beautiful day to…" | go outside, have a walk, study English, drink some coffee, enjoy the morning | Molde único, 5 finais | Completeness + fluency |
-| 25 | "What's the plan…?" | for today, for this morning, for the afternoon, after class, for the weekend | Combinar atividades | Completeness + fluency |
-| 26 | Revisão Bloco 4 | 1 frase de cada lição 21–25 | Progresso visível | Minutos aprovados |
-| 27 | **Bônus** — Desafio: conversa mais natural | How have you been doing lately, I've been pretty busy but I'm good, It looks like it might rain later, It's the perfect day to relax outside, Do you have any plans for the weekend | Mesmo small talk, frases mais longas e naturais | Completeness + fluency (opcional) |
+| 19 | Variações de "How are you?" | How are you?, How are you doing?, How's it going?, How have you been?, How's your day going? | Abrir qualquer conversa | Completeness + fluency |
+| 20 | Respondendo que está bem | I'm good thanks, I'm doing well, I'm great thank you, Pretty good actually, I'm feeling good today | Resposta automática ao "how are you" | Completeness + fluency |
+| 21 | Falando do dia / weather | It's sunny today, It's a bit cloudy today, It's really hot today, It's a little cold today, The weather is nice today | Small talk universal | Accuracy + completude |
+| 22 | "It's a beautiful day to…" | go outside, have a walk, study English, drink some coffee, enjoy the morning | Molde único, 5 finais | Completeness + fluency |
+| 23 | "What's the plan…?" | for today, for this morning, for the afternoon, after class, for the weekend | Combinar atividades | Completeness + fluency |
+| 24 | Revisão Bloco 4 | 1 frase de cada lição 19–23 | Progresso visível | Minutos aprovados |
+| 25 | **Bônus** — Desafio: conversa mais natural | How have you been doing lately, I've been pretty busy but I'm good, It looks like it might rain later, It's the perfect day to relax outside, Do you have any plans for the weekend | Mesmo small talk, frases mais longas e naturais | Completeness + fluency (opcional) |
 
 ## Regra de liberação da escrita
 Uma tentativa oral é obrigatória antes de qualquer texto. Após a tentativa e

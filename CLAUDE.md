@@ -18,11 +18,11 @@ Métrica norte do produto: **minutos de prática oral APROVADA**, nunca tempo de
 - ✅ Auth: **Supabase Auth** (decidido e em produção) — sign-in anônimo, cada
   usuário ganha um id estável sem cadastro. Progresso e eventos no Postgres
   com RLS por user_id; degrada para local-only sem credenciais.
-- Fase 1 "Inglês que Você Já Conhece": 23 microlições obrigatórias de 5–10
+- Fase 1 "Inglês que Você Já Conhece": 21 microlições obrigatórias de 5–10
   min, em 4 blocos pedagógicos internos — reconhecimento/confiança, som/
   sílaba forte, palavra/frase, conversa do dia a dia — mais 4 lições BÔNUS
   opcionais (uma por bloco, `Lesson.bonus = true`, palavras/frases mais
-  difíceis do mesmo assunto, nunca exigidas para progredir) — 27 lições no
+  difíceis do mesmo assunto, nunca exigidas para progredir) — 25 lições no
   total (matriz completa em docs/curriculo-fase1.md)
 - ✅ Loop core completo: áudio pré-gerado → gravação → Azure Pronunciation
   Assessment → feedback pedagógico em PT-BR → liberação da escrita → regravação
@@ -34,7 +34,7 @@ Métrica norte do produto: **minutos de prática oral APROVADA**, nunca tempo de
 - ✅ Analytics de eventos (conclusão, tentativas, regravação, retenção)
 - Paywall (oferta "Beta Fundador" — acesso à Fase 1): gating das lições atrás
   de `EntitlementService` JÁ implementado, fake local na web. 2026-06: todas
-  as 27 lições estão grátis (`kFreeLessonCount`) até ter usuários reais e
+  as 25 lições estão grátis (`kFreeLessonCount`) até ter usuários reais e
   monetização ativa — falta a impl real com RevenueCat, bloqueada por conta
   Apple (ver Stack).
 
@@ -83,7 +83,7 @@ Métrica norte do produto: **minutos de prática oral APROVADA**, nunca tempo de
 - Feedback nunca diz só "errado" — sempre indica o que tentar corrigir. A
   mensagem fixa aparece na hora e é trocada pela da Claude quando chega; sem
   rede/chave fica a fixa (o app nunca depende da Claude para funcionar)
-- Paywall: as 27 lições da Fase 1 são grátis hoje (`kFreeLessonCount`, ver
+- Paywall: as 25 lições da Fase 1 são grátis hoje (`kFreeLessonCount`, ver
   Stack) enquanto não há monetização real ativa; o gate volta a valer quando
   RevenueCat entrar. Gating passa SEMPRE pela interface `EntitlementService` —
   nunca checar compra direto da UI

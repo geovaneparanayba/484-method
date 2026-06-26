@@ -279,14 +279,14 @@ class _HomeScreenState extends State<HomeScreen> {
               // Beta Fundador) e o progressivo (a lição N abre quando a N-1
               // foi concluída; a primeira está sempre aberta).
               for (final (i, lesson) in fase1Lessons.indexed) ...[
-                if (i == 0 || i == 7 || i == 14 || i == 20)
+                if (i == 0 || i == 6 || i == 11 || i == 18)
                   Padding(
                     padding: EdgeInsets.only(top: i == 0 ? 0 : 16, bottom: 4),
                     child: Text(
                       switch (i) {
                         0 => 'Bloco 1 — Reconhecimento e confiança',
-                        7 => 'Bloco 2 — Som e sílaba forte',
-                        14 => 'Bloco 3 — Da palavra à frase',
+                        6 => 'Bloco 2 — Som e sílaba forte',
+                        11 => 'Bloco 3 — Da palavra à frase',
                         _ => 'Bloco 4 — Conversa do dia a dia',
                       },
                       style: theme.textTheme.titleSmall?.copyWith(

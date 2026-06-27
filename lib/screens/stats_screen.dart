@@ -108,6 +108,7 @@ class _Body extends StatelessWidget {
     final bonusUsers       = (stats['bonus_users']         as num?)?.toInt() ?? 0;
     final funnel           = (stats['funnel'] as Map?)?.cast<String, dynamic>() ?? {};
     final dau              = (stats['dau_14d'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final hourly           = (stats['hourly_48h'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final accHistogram     = (stats['accuracy_histogram'] as Map?)?.cast<String, dynamic>() ?? {};
     final hardestWords     = (stats['hardest_words'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final avgGapSec        = (stats['avg_seconds_between_attempts'] as num?)?.toDouble() ?? 0;
@@ -310,6 +311,43 @@ class _Body extends StatelessWidget {
                 ]),
               );
             }),
+          ],
+
+          // ── Usuários ativos por hora (últimas 48h) ─────────────────────
+          if (hourly.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _section('Usuários ativos por hora — últimas 48h'),
+            const SizedBox(height: 8),
+            ...() {
+              final maxHourly = hourly.fold<int>(
+                  0, (m, h) => ((h['users'] as num?)?.toInt() ?? 0) > m ? (h['users'] as num).toInt() : m);
+              return hourly.map((h) {
+                final ts = h['hour_ts'] as String? ?? '';
+                final label = ts.length >= 13
+                    ? '${ts.substring(8, 10)}/${ts.substring(5, 7)} ${ts.substring(11, 13)}h'
+                    : ts;
+                final u = (h['users'] as num?)?.toInt() ?? 0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(children: [
+                    SizedBox(
+                      width: 80,
+                      child: Text(label, style: theme.textTheme.bodySmall),
+                    ),
+                    Expanded(
+                      child: LinearProgressIndicator(
+                        value: u / (maxHourly > 0 ? maxHourly : 1),
+                        minHeight: 14,
+                        borderRadius: BorderRadius.circular(4),
+                        color: Colors.teal.shade400,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('$u', style: theme.textTheme.bodySmall),
+                  ]),
+                );
+              });
+            }(),
           ],
 
           const SizedBox(height: 32),

@@ -26,6 +26,9 @@ Future<void> main() async {
   final analytics = await AnalyticsService.load(backend: Backend.instance);
   // Uma vez por sessão: browser/SO/idioma agregados, nunca o user-agent cru.
   analytics.log('device_info', collectDeviceInfo());
+  // Topo do funil de aquisição: quem chega ainda sem consentimento vai ver a
+  // landing. (Recorrente já consentiu e cai direto no app — não conta de novo.)
+  if (!store.hasVoiceConsent) analytics.log('landing_viewed');
   // Web/dev usa o fake local; mobile trocará por RevenueCat na mesma interface.
   final entitlement = await LocalEntitlementService.load();
   runApp(Method484App(

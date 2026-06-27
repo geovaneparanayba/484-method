@@ -93,7 +93,6 @@ class _Body extends StatelessWidget {
     final usersStreak      = (stats['users_with_streak']   as num?)?.toInt() ?? 0;
     final avgStreakDays    = (stats['avg_streak_days']     as num?)?.toDouble() ?? 0;
     final rigorousUsers    = (stats['rigorous_mode_users'] as num?)?.toInt() ?? 0;
-    final retentionD1      = (stats['retention_d1_pct']    as num?)?.toDouble() ?? 0;
     final totalAttempts    = (stats['total_attempts']      as num?)?.toInt() ?? 0;
     final totalCompleted   = (stats['total_completed']     as num?)?.toInt() ?? 0;
     final avgAccuracy      = (stats['avg_accuracy']        as num?)?.toInt() ?? 0;
@@ -119,11 +118,29 @@ class _Body extends StatelessWidget {
     final paywallViews     = (stats['paywall_views'] as num?)?.toInt() ?? 0;
     final paywallClicks    = (stats['paywall_subscribe_clicks'] as num?)?.toInt() ?? 0;
     final paywallDismiss   = (stats['paywall_dismissals'] as num?)?.toInt() ?? 0;
-    final obCtaClicks      = (stats['onboarding_cta_clicks'] as num?)?.toInt() ?? 0;
-    final obConsentOk      = (stats['onboarding_consent_accepted'] as num?)?.toInt() ?? 0;
     final browserBreakdown = (stats['browser_breakdown'] as Map?)?.cast<String, dynamic>() ?? {};
     final osBreakdown      = (stats['os_breakdown'] as Map?)?.cast<String, dynamic>() ?? {};
     final localeBreakdown  = (stats['locale_breakdown'] as Map?)?.cast<String, dynamic>() ?? {};
+    final stickiness       = (stats['stickiness_pct'] as num?)?.toDouble() ?? 0;
+    final retention        = (stats['retention'] as Map?)?.cast<String, dynamic>() ?? {};
+    final activation       = (stats['activation'] as Map?)?.cast<String, dynamic>() ?? {};
+    final newUsers         = (stats['new_users_14d'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final northStar        = (stats['north_star_14d'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final lessonsPerUser   = (stats['lessons_per_active_user'] as num?)?.toDouble() ?? 0;
+    final recordingsPerUser= (stats['recordings_per_user'] as num?)?.toDouble() ?? 0;
+    final azureCost        = (stats['azure_cost_usd'] as num?)?.toDouble() ?? 0;
+    final azureCostPerUser = (stats['azure_cost_per_user_usd'] as num?)?.toDouble() ?? 0;
+    final acqFunnel        = (stats['acquisition_funnel'] as Map?)?.cast<String, dynamic>() ?? {};
+    final sourceBreakdown  = (stats['source_breakdown'] as Map?)?.cast<String, dynamic>() ?? {};
+
+    // "15.4% (n=39)" ou "— (n=0)" quando o cohort é pequeno/vazio.
+    String fmtRet(String key) {
+      final r = (retention[key] as Map?)?.cast<String, dynamic>() ?? {};
+      final pct = (r['pct'] as num?)?.toDouble();
+      final n = (r['n'] as num?)?.toInt() ?? 0;
+      final p = pct == null ? '—' : '${pct.toStringAsFixed(1)}%';
+      return '$p (n=$n)';
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -141,9 +158,39 @@ class _Body extends StatelessWidget {
           const SizedBox(height: 8),
           _row(theme, Icons.local_fire_department, 'Com streak ativo', '$usersStreak usuários'),
           _row(theme, Icons.show_chart, 'Streak médio', '${avgStreakDays.toStringAsFixed(1)} dias'),
-          _row(theme, Icons.repeat, 'Voltaram no dia seguinte (D1)', '${retentionD1.toStringAsFixed(1)}%'),
           _row(theme, Icons.shield_outlined, 'Modo rigoroso ativado', '$rigorousUsers usuários'),
           _row(theme, Icons.exit_to_app, 'Iniciaram mas não concluíram nenhuma lição', '$startedNotDone usuários'),
+          _row(theme, Icons.bolt, 'Stickiness (DAU/MAU)', '${stickiness.toStringAsFixed(1)}%'),
+
+          // ── Retenção & ativação ───────────────────────────────────────
+          const SizedBox(height: 24),
+          _section('Retenção & ativação'),
+          _row(theme, Icons.repeat, 'D1 — voltou em até 1 dia', fmtRet('d1')),
+          _row(theme, Icons.repeat, 'D7 — voltou em até 7 dias', fmtRet('d7')),
+          _row(theme, Icons.repeat, 'D30 — voltou em até 30 dias', fmtRet('d30')),
+          _row(theme, Icons.rocket_launch_outlined,
+              'Ativação (concluiu ≥1 lição / iniciou ≥1)',
+              '${(activation['pct'] as num?)?.toStringAsFixed(1) ?? '0'}%  '
+              '(${(activation['activated'] as num?)?.toInt() ?? 0}/${(activation['started'] as num?)?.toInt() ?? 0})'),
+
+          // ── Crescimento: novos usuários por dia ───────────────────────
+          if (newUsers.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _section('Novos usuários por dia (14d)'),
+            const SizedBox(height: 8),
+            ..._timeSeriesRows(theme, newUsers, 'day', 'users', Colors.green.shade500,
+                labelFmt: (s) => s.length > 10 ? s.substring(5, 10) : s),
+          ],
+
+          // ── North star: minutos de prática aprovada por dia ───────────
+          if (northStar.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _section('North star — min. de prática aprovada/dia (14d)'),
+            const SizedBox(height: 8),
+            ..._timeSeriesRows(theme, northStar, 'day', 'approved_min', Colors.teal.shade600,
+                labelFmt: (s) => s.length > 10 ? s.substring(5, 10) : s,
+                valueFmt: (v) => '${v.toStringAsFixed(1)}min'),
+          ],
 
           // ── Engajamento ───────────────────────────────────────────────
           const SizedBox(height: 24),
@@ -157,6 +204,8 @@ class _Body extends StatelessWidget {
           const SizedBox(height: 8),
           _row(theme, Icons.percent, 'Taxa de aprovação por tentativa', '${approvalRate.toStringAsFixed(1)}%'),
           _row(theme, Icons.replay, 'Tentativas médias até aprovar', avgAttempts.toStringAsFixed(1)),
+          _row(theme, Icons.menu_book_outlined, 'Lições concluídas por usuário ativo', lessonsPerUser.toStringAsFixed(1)),
+          _row(theme, Icons.mic_none, 'Gravações por usuário', recordingsPerUser.toStringAsFixed(1)),
 
           // ── Distribuição de notas ────────────────────────────────────
           if (accHistogram.isNotEmpty) ...[
@@ -198,6 +247,8 @@ class _Body extends StatelessWidget {
           ]),
           const SizedBox(height: 8),
           _row(theme, Icons.timer, 'Tempo médio entre tentativas (mesma lição)', '${avgGapSec.toStringAsFixed(1)}s'),
+          _row(theme, Icons.attach_money, 'Custo Azure total (est. US\$1/h, tarifa S0)', 'US\$ ${azureCost.toStringAsFixed(2)}'),
+          _row(theme, Icons.person_outline, 'Custo Azure por usuário', 'US\$ ${azureCostPerUser.toStringAsFixed(4)}'),
 
           // ── Palavras mais difíceis ──────────────────────────────────────
           if (hardestWords.isNotEmpty) ...[
@@ -240,11 +291,35 @@ class _Body extends StatelessWidget {
           _row(theme, Icons.touch_app_outlined, 'Cliques em assinar', '$paywallClicks'),
           _row(theme, Icons.close, 'Dispensou ("Agora não")', '$paywallDismiss'),
 
-          // ── Funil de onboarding ────────────────────────────────────────────
+          // ── Funil de aquisição (landing → CTA → consentimento → 1ª lição) ─
           const SizedBox(height: 24),
-          _section('Funil de onboarding'),
-          _row(theme, Icons.play_circle_outline, 'Clicou no CTA da landing', '$obCtaClicks'),
-          _row(theme, Icons.check_circle_outline, 'Aceitou o consentimento de voz', '$obConsentOk'),
+          _section('Funil de aquisição'),
+          ...() {
+            final landing  = (acqFunnel['landing_views'] as num?)?.toInt() ?? 0;
+            final cta      = (acqFunnel['cta_clicks'] as num?)?.toInt() ?? 0;
+            final consent  = (acqFunnel['consent_accepted'] as num?)?.toInt() ?? 0;
+            final firstDone= (acqFunnel['first_lesson_done'] as num?)?.toInt() ?? 0;
+            String conv(int num, int den) =>
+                den > 0 ? '  (${(100.0 * num / den).toStringAsFixed(0)}%)' : '';
+            return [
+              _row(theme, Icons.visibility_outlined,
+                  'Viu a landing', landing > 0 ? '$landing' : '— (instrumentando)'),
+              _row(theme, Icons.play_circle_outline,
+                  'Clicou no CTA', '$cta${conv(cta, landing)}'),
+              _row(theme, Icons.check_circle_outline,
+                  'Aceitou consentimento de voz', '$consent${conv(consent, cta)}'),
+              _row(theme, Icons.school_outlined,
+                  'Concluiu a 1ª lição', '$firstDone${conv(firstDone, consent)}'),
+            ];
+          }(),
+
+          // ── Aquisição: de onde vêm ───────────────────────────────────────
+          if (sourceBreakdown.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _section('De onde vêm (fonte de aquisição)'),
+            const SizedBox(height: 8),
+            ..._breakdownRows(theme, 'Fonte', sourceBreakdown),
+          ],
 
           // ── Dispositivo ─────────────────────────────────────────────────
           if (browserBreakdown.isNotEmpty || osBreakdown.isNotEmpty || localeBreakdown.isNotEmpty) ...[
@@ -418,6 +493,47 @@ class _Body extends StatelessWidget {
         return _row(t, Icons.circle, e.key, '$n ($pct%)');
       }),
     ];
+  }
+
+  /// Mini gráfico de barras horizontal de uma série temporal (barra
+  /// proporcional ao pico da janela). Usado por novos usuários e north star.
+  List<Widget> _timeSeriesRows(
+    ThemeData t,
+    List<Map<String, dynamic>> data,
+    String dayKey,
+    String valKey,
+    Color color, {
+    String Function(String)? labelFmt,
+    String Function(double)? valueFmt,
+  }) {
+    final maxV = data.fold<double>(0, (m, d) {
+      final v = (d[valKey] as num?)?.toDouble() ?? 0;
+      return v > m ? v : m;
+    });
+    return data.map((d) {
+      final rawDay = d[dayKey] as String? ?? '';
+      final label = labelFmt != null ? labelFmt(rawDay) : rawDay;
+      final v = (d[valKey] as num?)?.toDouble() ?? 0;
+      final valStr = valueFmt != null
+          ? valueFmt(v)
+          : (v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(1));
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Row(children: [
+          SizedBox(width: 90, child: Text(label, style: t.textTheme.bodySmall)),
+          Expanded(
+            child: LinearProgressIndicator(
+              value: maxV > 0 ? v / maxV : 0,
+              minHeight: 14,
+              borderRadius: BorderRadius.circular(4),
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(valStr, style: t.textTheme.bodySmall),
+        ]),
+      );
+    }).toList();
   }
 }
 

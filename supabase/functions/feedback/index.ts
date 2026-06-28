@@ -6,7 +6,10 @@
 // Sem a secret configurada, retorna 503 e o app cai nas mensagens fixas.
 import Anthropic from "npm:@anthropic-ai/sdk@0.70.0";
 
-const MODEL = Deno.env.get("FEEDBACK_MODEL") ?? "claude-opus-4-8";
+// Haiku 4.5: a tarefa é mapear scores do Azure → 1-2 frases curtas seguindo
+// regras rígidas de tom — instrução estruturada que o Haiku segue bem, a 1/5
+// do custo do Opus. Trocável por secret FEEDBACK_MODEL sem redeploy.
+const MODEL = Deno.env.get("FEEDBACK_MODEL") ?? "claude-haiku-4-5";
 
 const SYSTEM = `Você é o coach de pronúncia do 484 Method, um app que ensina \
 brasileiros adultos a falar inglês. Tom adulto, direto e encorajador — nunca \

@@ -125,6 +125,10 @@ class _Method484AppState extends State<Method484App> {
   // e cai direto no app, sem ver a landing nem o onboarding.
   bool _introSeen = false;
 
+  // Logo após o onboarding, leva direto à 1ª lição (conserto do funil
+  // consentimento→1ª lição). A HomeScreen consome no initState (roda 1x só).
+  bool _justOnboarded = false;
+
   @override
   Widget build(BuildContext context) {
     final Widget home;
@@ -138,7 +142,9 @@ class _Method484AppState extends State<Method484App> {
               store: widget.store,
               onDone: () {
                 widget.analytics?.log('onboarding_consent_accepted');
-                setState(() {});
+                // Cai direto na 1ª lição (não na dashboard vazia) — remove o
+                // atrito consentimento→1ª lição e leva ao "aha" do loop.
+                setState(() => _justOnboarded = true);
               },
               onBack: () => setState(() => _introSeen = false),
             )
@@ -152,6 +158,7 @@ class _Method484AppState extends State<Method484App> {
         entitlement: widget.entitlement,
         assessor: BackendPronunciationAssessor(backend),
         analytics: widget.analytics,
+        autostartFirstLesson: _justOnboarded,
         // Exclusão de dados derruba o consentimento → volta ao onboarding.
         onDataCleared: () => setState(() {}),
       );

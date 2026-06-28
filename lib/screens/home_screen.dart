@@ -23,6 +23,7 @@ class HomeScreen extends StatefulWidget {
     required this.assessor,
     this.analytics,
     this.onDataCleared,
+    this.autostartFirstLesson = false,
   });
 
   final ProgressStore store;
@@ -33,11 +34,29 @@ class HomeScreen extends StatefulWidget {
   /// Chamado após a exclusão de dados (o app volta ao onboarding).
   final VoidCallback? onDataCleared;
 
+  /// Logo após o onboarding: abre a 1ª lição automaticamente (conserto do
+  /// funil consentimento→1ª lição), em vez de deixar o novato na dashboard.
+  final bool autostartFirstLesson;
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Conserto do funil: quem acabou de consentir entra direto na 1ª lição,
+    // em vez de cair na dashboard vazia ("0 de 484h" assusta e não tem CTA).
+    // Só no 1º acesso (progresso zero); initState roda 1x, sem repetir.
+    if (widget.autostartFirstLesson &&
+        widget.store.totalApproved == Duration.zero) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openLesson(fase1Lessons.first);
+      });
+    }
+  }
+
   Future<void> _confirmClearData() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -220,6 +239,40 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
+              if (total.inSeconds == 0) ...[
+                Card(
+                  color: theme.colorScheme.secondaryContainer,
+                  child: InkWell(
+                    onTap: () => _openLesson(fase1Lessons.first),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Comece sua primeira lição',
+                                    style: theme.textTheme.titleMedium),
+                                const SizedBox(height: 4),
+                                Text(
+                                    'Ouça, repita e receba seu retorno em '
+                                    '~5 minutos.',
+                                    style: theme.textTheme.bodyMedium),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Icon(Icons.play_circle_fill,
+                              size: 40, color: theme.colorScheme.secondary),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(20),

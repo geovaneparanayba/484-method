@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:method484/data/fase1.dart';
 import 'package:method484/main.dart';
 import 'package:method484/models/lesson.dart';
+import 'package:method484/screens/home_screen.dart';
 import 'package:method484/screens/lesson_screen.dart';
 import 'package:method484/screens/onboarding_screen.dart';
 import 'package:method484/services/feedback_messages.dart';
@@ -75,6 +76,23 @@ void main() {
     await tester.pump();
     expect(find.textContaining('Palavra 3'), findsOneWidget);
     expect(find.textContaining('Palavra 1'), findsNothing);
+  });
+
+  testWidgets('home com autostart cai direto na 1ª lição (progresso zero)',
+      (tester) async {
+    final store = await _emptyStore();
+    await tester.pumpWidget(MaterialApp(
+      home: HomeScreen(
+        store: store,
+        entitlement: await LocalEntitlementService.load(),
+        assessor: _FakeAssessor(),
+        autostartFirstLesson: true,
+      ),
+    ));
+    await tester.pumpAndSettle();
+    // Conserto do funil consentimento→1ª lição: o novato entra na lição,
+    // não fica parado na dashboard vazia.
+    expect(find.textContaining('Regra do jogo'), findsOneWidget);
   });
 
   testWidgets('onboarding só libera após consentimento de voz',

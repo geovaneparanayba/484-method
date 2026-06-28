@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/lesson.dart';
 import '../services/analytics_service.dart';
 import '../services/audio_recorder_service.dart';
+import '../services/backend.dart';
 import '../services/feedback_messages.dart';
 import '../services/progress_store.dart';
 import '../services/pronunciation_assessor.dart';
@@ -63,6 +64,12 @@ class _LessonScreenState extends State<LessonScreen>
   PronunciationResult? _result;
   double? _firstAccuracy; // accuracy da 1ª tentativa, p/ medir a melhora
   String? _error;
+
+  /// Feedback gerado pela Claude (Edge Function) para o resultado atual.
+  /// null = ainda não chegou (ou indisponível) → usa a mensagem fixa.
+  String? _aiFeedback;
+  // Invalida respostas atrasadas: só a última tentativa pode setar o texto.
+  int _feedbackToken = 0;
   Duration _approved = Duration.zero;
   Duration _audioSent = Duration.zero;
 
@@ -187,6 +194,7 @@ class _LessonScreenState extends State<LessonScreen>
       });
       setState(() {
         _result = result;
+        _aiFeedback = null;
         _audioSent += audio.duration;
         _recPhase = _RecPhase.idle;
         if (_step == _Step.listen) {
@@ -200,6 +208,7 @@ class _LessonScreenState extends State<LessonScreen>
           _step = _Step.resultFinal;
         }
       });
+      _maybeFetchAiFeedback(result, attempt, approved);
     } catch (e) {
       debugPrint('[licao] avaliação falhou: $e');
       widget.analytics?.log('assessment_failed', {
@@ -222,10 +231,36 @@ class _LessonScreenState extends State<LessonScreen>
     }
   }
 
-  /// Mensagem de feedback: fixa por banda de nota (lib/services/
-  /// feedback_messages.dart), calculada na hora, sem chamada de rede.
+  /// Mensagem a exibir: a da Claude quando chegou, senão a fixa (fallback
+  /// imediato e offline). Mantém a regra de produto mesmo sem rede/chave.
   String _feedbackText(PronunciationResult r) =>
-      feedbackFor(r, widget.lesson, rigorous: widget.rigorous);
+      _aiFeedback ?? feedbackFor(r, widget.lesson, rigorous: widget.rigorous);
+
+  /// Dispara o feedback da Claude em segundo plano. Só busca quando a
+  /// mensagem realmente será mostrada (1ª tentativa sempre; tentativa final
+  /// só quando reprovou) — aprovação na final exibe o selo, não o texto.
+  /// Sem backend (modo local) ou acima do teto diário (429), fica na fixa.
+  void _maybeFetchAiFeedback(
+      PronunciationResult r, int attempt, bool approved) {
+    final backend = Backend.instance;
+    if (backend == null) return; // modo local-only: fica na mensagem fixa
+    if (attempt == 2 && approved) return; // texto não aparece → não gasta
+    final token = ++_feedbackToken;
+    backend.generateFeedback({
+      'word': _item.text,
+      'attempt': attempt,
+      'approved': approved,
+      'accuracy': r.accuracy.round(),
+      'fluency': r.fluency.round(),
+      'completeness': r.completeness.round(),
+      'prosody': r.prosody?.round(),
+      'minPhoneme': r.minPhoneme.round(),
+      'worstSyllable': r.worstSyllable?.grapheme,
+    }).then((msg) {
+      if (!mounted || token != _feedbackToken || msg == null) return;
+      setState(() => _aiFeedback = msg);
+    });
+  }
 
   /// Regrava a tentativa final: volta ao Livro Aberto (palavra visível, dá
   /// pra ouvir de novo). Mantém _firstAccuracy para a melhora seguir medida
@@ -252,6 +287,7 @@ class _LessonScreenState extends State<LessonScreen>
         _step = _Step.listen;
         _hasListened = false;
         _result = null;
+        _aiFeedback = null;
         _firstAccuracy = null;
         _error = null;
       }
@@ -570,6 +606,7 @@ class _LessonScreenState extends State<LessonScreen>
               _step = _Step.intro;
               _hasListened = false;
               _result = null;
+              _aiFeedback = null;
               _approved = Duration.zero;
               _firstAccuracy = null;
               _wordAccuracies.clear();

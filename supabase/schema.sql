@@ -324,3 +324,42 @@ as $function$
        limit 1)
   );
 $function$;
+
+-- Teto diário de feedbacks via Claude por usuário (guarda de custo contra
+-- loop/abuso de um único usuário). RLS ligado SEM policies = nenhum acesso
+-- direto do cliente; só a função SECURITY DEFINER abaixo lê/escreve.
+-- Aplicado em 2026-06-27 (migração feedback_daily_quota).
+create table if not exists public.feedback_quota (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  day date not null default current_date,
+  count int not null default 0,
+  primary key (user_id, day)
+);
+alter table public.feedback_quota enable row level security;
+
+-- Incrementa o contador do dia de forma atômica e devolve se a chamada é
+-- permitida (false acima do teto). Chamada pela Edge Function `feedback`
+-- antes de gerar via Claude; acima do teto → 429 → cliente usa a msg fixa.
+create or replace function public.consume_feedback_quota(p_limit int)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $function$
+declare
+  v_count int;
+begin
+  if auth.uid() is null then
+    return true; -- sem usuário identificado: não conta, deixa passar
+  end if;
+  insert into public.feedback_quota as fq (user_id, day, count)
+  values (auth.uid(), current_date, 1)
+  on conflict (user_id, day) do update
+    set count = fq.count + 1
+    where fq.count < p_limit
+  returning fq.count into v_count;
+  return v_count is not null;
+end;
+$function$;
+revoke all on function public.consume_feedback_quota(int) from public;
+grant execute on function public.consume_feedback_quota(int) to authenticated, anon;

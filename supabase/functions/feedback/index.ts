@@ -5,11 +5,17 @@
 //
 // Sem a secret configurada, retorna 503 e o app cai nas mensagens fixas.
 import Anthropic from "npm:@anthropic-ai/sdk@0.70.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Haiku 4.5: a tarefa é mapear scores do Azure → 1-2 frases curtas seguindo
 // regras rígidas de tom — instrução estruturada que o Haiku segue bem, a 1/5
 // do custo do Opus. Trocável por secret FEEDBACK_MODEL sem redeploy.
 const MODEL = Deno.env.get("FEEDBACK_MODEL") ?? "claude-haiku-4-5";
+
+// Teto diário de feedbacks por usuário (defesa contra loop/abuso de um único
+// usuário; o crédito pré-pago já é o teto de custo duro da org). Trocável por
+// secret FEEDBACK_DAILY_LIMIT sem redeploy.
+const DAILY_LIMIT = Number(Deno.env.get("FEEDBACK_DAILY_LIMIT") ?? "150");
 
 const SYSTEM = `Você é o coach de pronúncia do 484 Method, um app que ensina \
 brasileiros adultos a falar inglês. Tom adulto, direto e encorajador — nunca \
@@ -43,6 +49,32 @@ Deno.serve(async (req) => {
       status: 503,
       headers: { ...cors, "Content-Type": "application/json" },
     });
+  }
+
+  // Teto por usuário/dia: incrementa atômico via RPC (conta por auth.uid()).
+  // Acima do limite → 429, e o cliente cai na mensagem fixa. Fail-open: uma
+  // falha do contador não derruba o feedback (o pré-pago é o teto de custo duro).
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const authHeader = req.headers.get("Authorization");
+    if (supabaseUrl && anonKey && authHeader) {
+      const supabase = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: allowed, error } = await supabase.rpc(
+        "consume_feedback_quota",
+        { p_limit: DAILY_LIMIT },
+      );
+      if (!error && allowed === false) {
+        return new Response(JSON.stringify({ error: "quota_exceeded" }), {
+          status: 429,
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      }
+    }
+  } catch (_e) {
+    // fail-open: não bloqueia o feedback por causa do contador
   }
 
   try {

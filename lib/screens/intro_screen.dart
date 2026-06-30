@@ -58,8 +58,10 @@ class IntroScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Escute, repita, grave a sua voz e receba feedback em '
-                    'português — e grave de novo até soar mais natural.',
+                    'Plataforma de fala ativa em inglês para quem entende '
+                    'mais do que consegue falar. Você escuta, repete, grava '
+                    'a sua voz e recebe feedback em português — e grava de '
+                    'novo até soar mais natural.',
                     style: theme.textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),

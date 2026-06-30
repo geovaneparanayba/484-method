@@ -495,7 +495,7 @@ class _LessonScreenState extends State<LessonScreen>
     switch (_step) {
       case _Step.intro:
         return _centered([
-          Text('Lição: ${widget.lesson.title}',
+          Text('Treino: ${widget.lesson.title}',
               style: theme.textTheme.headlineSmall,
               textAlign: TextAlign.center),
           const SizedBox(height: 16),
@@ -645,7 +645,7 @@ class _LessonScreenState extends State<LessonScreen>
             FilledButton(
               onPressed: _nextItem,
               child:
-                  Text(_isLastItem ? 'Concluir lição' : 'Próxima palavra'),
+                  Text(_isLastItem ? 'Concluir treino' : 'Próxima palavra'),
             ),
             TextButton.icon(
               onPressed: _retryFinal,
@@ -661,7 +661,7 @@ class _LessonScreenState extends State<LessonScreen>
             TextButton(
               onPressed: _nextItem,
               child:
-                  Text(_isLastItem ? 'Concluir a lição' : 'Próxima palavra'),
+                  Text(_isLastItem ? 'Concluir treino' : 'Próxima palavra'),
             ),
           ],
         ]);

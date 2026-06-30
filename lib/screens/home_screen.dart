@@ -230,6 +230,53 @@ class _HomeScreenState extends State<HomeScreen> {
     return confirmed ?? false;
   }
 
+  /// A "próxima melhor ação": a 1ª lição não-bônus ainda não concluída (o
+  /// caminho principal é linear). Null = concluiu tudo.
+  Lesson? _nextLesson() {
+    for (final l in fase1Lessons) {
+      if (l.bonus) continue;
+      if (!widget.store.isLessonCompleted(l.id)) return l;
+    }
+    return null;
+  }
+
+  /// Card de uma única ação clara no topo do dashboard (#8): evita o paradoxo
+  /// de escolha — diz o próximo passo e leva direto a ele.
+  Widget _nextBestActionCard(ThemeData theme, Lesson next, bool isFirst) {
+    final text = isFirst
+        ? 'Seu próximo passo: fazer seu primeiro teste de fala (~5 min).'
+        : 'Seu próximo passo: treinar "${next.title}" e ganhar mais minutos '
+            'aprovados.';
+    return Card(
+      color: theme.colorScheme.secondaryContainer,
+      child: InkWell(
+        onTap: () => _openLesson(next),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Próxima melhor ação',
+                        style: theme.textTheme.bodySmall),
+                    const SizedBox(height: 4),
+                    Text(text, style: theme.textTheme.titleMedium),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(Icons.play_circle_fill,
+                  size: 40, color: theme.colorScheme.secondary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _openLesson(Lesson lesson) async {
     await Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => LessonScreen(
@@ -247,6 +294,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final total = widget.store.totalApproved;
+    final next = _nextLesson();
     return Scaffold(
       appBar: AppBar(
         title: const Text('484 Method'),
@@ -293,38 +341,8 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              if (total.inSeconds == 0) ...[
-                Card(
-                  color: theme.colorScheme.secondaryContainer,
-                  child: InkWell(
-                    onTap: () => _openLesson(fase1Lessons.first),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Comece sua primeira lição',
-                                    style: theme.textTheme.titleMedium),
-                                const SizedBox(height: 4),
-                                Text(
-                                    'Ouça, repita e receba seu retorno em '
-                                    '~5 minutos.',
-                                    style: theme.textTheme.bodyMedium),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Icon(Icons.play_circle_fill,
-                              size: 40, color: theme.colorScheme.secondary),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+              if (next != null) ...[
+                _nextBestActionCard(theme, next, total == Duration.zero),
                 const SizedBox(height: 12),
               ],
               Card(
@@ -420,7 +438,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (paywalled) {
                     subtitle = 'Beta Fundador';
                   } else if (!progressionUnlocked) {
-                    subtitle = 'Conclua a lição anterior para desbloquear';
+                    subtitle = 'Conclua o treino anterior para desbloquear';
                   } else if (lesson.bonus) {
                     subtitle =
                         'Bônus opcional · ${lesson.items.length} palavras · ~5 min';

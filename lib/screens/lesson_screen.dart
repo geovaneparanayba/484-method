@@ -494,14 +494,20 @@ class _LessonScreenState extends State<LessonScreen>
             Container(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
+                color: theme.brightness == Brightness.dark
+                    ? Colors.green.shade900.withValues(alpha: 0.35)
+                    : Colors.green.shade50,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 '📈 Você melhorou ${gain.toStringAsFixed(0)} pontos da '
                 'primeira tentativa para esta. É exatamente isso que treina '
                 'o ouvido.',
-                style: theme.textTheme.bodyMedium,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.brightness == Brightness.dark
+                      ? Colors.green.shade200
+                      : Colors.green.shade900,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),

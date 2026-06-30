@@ -106,8 +106,8 @@ void main() {
     expect(find.textContaining('Sua voz, suas regras'), findsOneWidget);
     expect(store.hasVoiceConsent, isFalse);
 
-    await tester.ensureVisible(find.textContaining('Aceito a gravação'));
-    await tester.tap(find.textContaining('Aceito a gravação'));
+    await tester.ensureVisible(find.textContaining('Aceitar e fazer'));
+    await tester.tap(find.textContaining('Aceitar e fazer'));
     await tester.pumpAndSettle();
     expect(store.hasVoiceConsent, isTrue);
     expect(done, isTrue);
@@ -252,7 +252,7 @@ void main() {
     expect(store2.themePref, 'dark');
   });
 
-  test('memória de palavras separa "a revisar" de "dominadas" e ordena', () {
+  test('mapa de fala: separa dominadas/revisar, ordena e categoriza', () {
     final rows = <Map<String, dynamic>>[
       {'props': {'item': 'apple', 'accuracy': 92, 'approved': true}},
       {'props': {'item': 'apple', 'accuracy': 70, 'approved': false}},
@@ -260,6 +260,8 @@ void main() {
       {'props': {'item': 'hotel', 'accuracy': 60, 'approved': false}},
       {'props': {'item': 'banana', 'accuracy': 40, 'approved': false}},
       {'props': {'item': 'cinema', 'accuracy': 88, 'approved': true}},
+      // accuracy ok, mas prosódia baixa → categoria Ritmo.
+      {'props': {'item': 'comfortable', 'accuracy': 85, 'prosody': 50, 'approved': false}},
       {'props': {'noise': 1}}, // sem 'item' → ignorado
     ];
     final mem = aggregateWordMemory(rows);
@@ -270,8 +272,15 @@ void main() {
     expect(mem.mastered.first.attempts, 2); // apple: 2 tentativas
 
     // A revisar (nunca aprovadas), pior accuracy primeiro.
-    expect(mem.review.map((s) => s.word).toList(), ['banana', 'hotel']);
+    expect(mem.review.map((s) => s.word).toList(),
+        ['banana', 'hotel', 'comfortable']);
     expect(mem.review.first.bestAccuracy, 40);
+
+    // Categoria por dimensão fraca (dado real).
+    expect(mem.review.firstWhere((s) => s.word == 'comfortable').category,
+        SpeechCategory.rhythm);
+    expect(mem.review.firstWhere((s) => s.word == 'banana').category,
+        SpeechCategory.pronunciation); // sem prosódia → pronúncia
   });
 
   test('ativação: firstOnce dispara só uma vez; aha persiste', () async {

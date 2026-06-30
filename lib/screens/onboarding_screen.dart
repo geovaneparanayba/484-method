@@ -70,7 +70,7 @@ class OnboardingScreen extends StatelessWidget {
                   const SizedBox(height: 32),
                   FilledButton(
                     onPressed: _acceptAndStart,
-                    child: const Text('Aceito a gravação de voz — começar'),
+                    child: const Text('Aceitar e fazer meu primeiro teste de fala'),
                   ),
                   const SizedBox(height: 8),
                   Text(

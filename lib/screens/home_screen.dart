@@ -316,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (Backend.instance != null)
                 const PopupMenuItem(
                   value: 'words',
-                  child: Text('Minhas palavras'),
+                  child: Text('Meu mapa de fala'),
                 ),
               if (Backend.instance != null)
                 const PopupMenuItem(

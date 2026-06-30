@@ -2,25 +2,34 @@ import 'package:flutter/material.dart';
 
 import '../services/backend.dart';
 
-/// Estatística por palavra: melhor accuracy, nº de tentativas e se já foi
-/// aprovada alguma vez (= dominada).
+/// Categoria do ponto de fala a revisar — derivada de dado real (o app só
+/// mede pronúncia/accuracy e ritmo/prosódia; não há sinal pra "estrutura de
+/// frase" ou "tradução mental", então essas não viram categorias falsas).
+enum SpeechCategory { pronunciation, rhythm }
+
+/// Estatística por palavra no mapa de fala: melhor accuracy, tentativas, se já
+/// foi dominada (aprovada alguma vez) e, quando a revisar, qual a dimensão
+/// fraca (pronúncia x ritmo).
 class WordStat {
   const WordStat({
     required this.word,
     required this.attempts,
     required this.bestAccuracy,
     required this.mastered,
+    required this.category,
   });
 
   final String word;
   final int attempts;
   final double bestAccuracy;
   final bool mastered;
+  final SpeechCategory category;
 }
 
-/// Agrega as tentativas (eventos `attempt_assessed`) do usuário em duas listas:
-/// "a revisar" (nunca aprovadas, da pior accuracy pra melhor) e "dominadas"
-/// (aprovadas alguma vez, da melhor pra pior). Função pura — testável sem rede.
+/// Agrega as tentativas (`attempt_assessed`) do usuário. "A revisar" = nunca
+/// aprovadas (pior accuracy primeiro), categorizadas por dimensão fraca:
+/// ritmo quando a prosódia é o ponto baixo, senão pronúncia. "Dominadas" =
+/// aprovadas alguma vez. Função pura — testável sem rede.
 ({List<WordStat> review, List<WordStat> mastered}) aggregateWordMemory(
     List<Map<String, dynamic>> rows) {
   final byWord = <String, List<Map<String, dynamic>>>{};
@@ -34,18 +43,26 @@ class WordStat {
 
   final stats = <WordStat>[];
   byWord.forEach((word, attempts) {
-    var best = 0.0;
+    var bestAcc = 0.0;
+    double? bestPros;
     var mastered = false;
     for (final a in attempts) {
       final acc = (a['accuracy'] as num?)?.toDouble() ?? 0;
-      if (acc > best) best = acc;
+      if (acc > bestAcc) bestAcc = acc;
+      final pros = (a['prosody'] as num?)?.toDouble();
+      if (pros != null && (bestPros == null || pros > bestPros)) bestPros = pros;
       if (a['approved'] == true) mastered = true;
     }
+    // Ritmo só quando a prosódia é claramente o elo fraco (e há dado dela).
+    final isRhythm =
+        bestPros != null && bestPros < 75 && bestPros < bestAcc;
     stats.add(WordStat(
       word: word,
       attempts: attempts.length,
-      bestAccuracy: best,
+      bestAccuracy: bestAcc,
       mastered: mastered,
+      category:
+          isRhythm ? SpeechCategory.rhythm : SpeechCategory.pronunciation,
     ));
   });
 
@@ -56,11 +73,10 @@ class WordStat {
   return (review: review, mastered: mastered);
 }
 
-/// "Minhas palavras": a memória de erros e acertos do aluno. Lista o que
-/// revisar (palavras ainda não aprovadas) e o que já dominou, a partir do
-/// histórico de tentativas no backend. Read-only — é revisão, não treino; as
-/// palavras aqui já passaram do Livro Aberto, então exibi-las não fere o
-/// princípio som-first.
+/// "Meu mapa de fala": a memória de fala do aluno — onde ele trava (por
+/// pronúncia ou ritmo) e o que já domina, a partir do histórico de tentativas.
+/// Read-only; as palavras já passaram do Livro Aberto, então exibi-las não
+/// fere o princípio som-first.
 class WordMemoryScreen extends StatefulWidget {
   const WordMemoryScreen({super.key});
 
@@ -82,7 +98,7 @@ class _WordMemoryScreenState extends State<WordMemoryScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Minhas palavras')),
+      appBar: AppBar(title: const Text('Meu mapa de fala')),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _future,
         builder: (context, snap) {
@@ -95,31 +111,35 @@ class _WordMemoryScreenState extends State<WordMemoryScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Text(
-                  'Pratique algumas lições e suas palavras aparecem aqui — '
-                  'o que revisar e o que você já domina.',
+                  'Faça alguns treinos e seu mapa de fala aparece aqui — '
+                  'onde você trava (pronúncia, ritmo) e o que já domina.',
                   style: theme.textTheme.bodyLarge,
                   textAlign: TextAlign.center,
                 ),
               ),
             );
           }
+          final pron = mem.review
+              .where((s) => s.category == SpeechCategory.pronunciation)
+              .toList();
+          final rhythm = mem.review
+              .where((s) => s.category == SpeechCategory.rhythm)
+              .toList();
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
               child: ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
-                  if (mem.review.isNotEmpty) ...[
-                    _sectionTitle(theme, 'A revisar', mem.review.length),
-                    const SizedBox(height: 8),
-                    for (final s in mem.review) _wordTile(theme, s),
-                    const SizedBox(height: 24),
-                  ],
-                  if (mem.mastered.isNotEmpty) ...[
-                    _sectionTitle(theme, 'Dominadas', mem.mastered.length),
-                    const SizedBox(height: 8),
-                    for (final s in mem.mastered) _wordTile(theme, s),
-                  ],
+                  Text(
+                    'Onde você trava na fala — e o que já domina.',
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 16),
+                  ..._section(theme, 'Pronúncia a revisar', pron),
+                  ..._section(theme, 'Ritmo a revisar', rhythm),
+                  ..._section(theme, 'Palavras dominadas', mem.mastered),
                 ],
               ),
             ),
@@ -129,11 +149,17 @@ class _WordMemoryScreenState extends State<WordMemoryScreen> {
     );
   }
 
-  Widget _sectionTitle(ThemeData theme, String label, int n) => Text(
-        '$label ($n)',
-        style: theme.textTheme.titleMedium
-            ?.copyWith(color: theme.colorScheme.secondary),
-      );
+  List<Widget> _section(ThemeData theme, String label, List<WordStat> items) {
+    if (items.isEmpty) return const [];
+    return [
+      Text('$label (${items.length})',
+          style: theme.textTheme.titleMedium
+              ?.copyWith(color: theme.colorScheme.secondary)),
+      const SizedBox(height: 8),
+      for (final s in items) _wordTile(theme, s),
+      const SizedBox(height: 24),
+    ];
+  }
 
   Widget _wordTile(ThemeData theme, WordStat s) {
     final color = _colorFor(s.bestAccuracy);

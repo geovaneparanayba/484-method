@@ -23,6 +23,7 @@ class ProgressStore {
   static const _kThemeMode = 'theme_mode';
   static const _kActivationSteps = 'activation_steps';
   static const _kAhaAnswered = 'aha_answered';
+  static const _kAbandonAsked = 'abandon_asked';
   static const _kItemIndexPrefix = 'lesson_item_index_';
 
   /// Meta do produto: 484 horas de prática aprovada.
@@ -128,6 +129,16 @@ class ProgressStore {
   bool get hasAnsweredAha => _prefs.getBool(_kAhaAnswered) ?? false;
 
   Future<void> setAhaAnswered() => _prefs.setBool(_kAhaAnswered, true);
+
+  /// Leitura (sem consumir) se um passo de ativação já ocorreu — usado pra
+  /// decidir o survey de abandono (começou mas não fechou o 1º ciclo).
+  bool hasDone(String step) =>
+      (_prefs.getStringList(_kActivationSteps) ?? const []).contains(step);
+
+  /// Survey de abandono: já perguntamos por que a pessoa parou no 1º ciclo?
+  bool get hasAskedAbandon => _prefs.getBool(_kAbandonAsked) ?? false;
+
+  Future<void> setAskedAbandon() => _prefs.setBool(_kAbandonAsked, true);
 
   bool isLessonCompleted(String lessonId) =>
       (_prefs.getStringList(_kCompletedLessons) ?? const [])

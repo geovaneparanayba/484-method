@@ -292,5 +292,12 @@ void main() {
     expect(store.hasAnsweredAha, isFalse);
     await store.setAhaAnswered();
     expect(store.hasAnsweredAha, isTrue);
+
+    // hasDone lê sem consumir; flag de abandono persiste.
+    expect(store.hasDone('first_recording_completed'), isTrue);
+    expect(store.hasDone('first_before_after_seen'), isFalse);
+    expect(store.hasAskedAbandon, isFalse);
+    await store.setAskedAbandon();
+    expect(store.hasAskedAbandon, isTrue);
   });
 }

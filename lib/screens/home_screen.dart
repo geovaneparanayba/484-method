@@ -51,6 +51,45 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Survey de abandono respondido nesta sessão (esconde o card na hora).
+  bool _abandonAnswered = false;
+
+  // #5 Missões: rótulos pras primeiras lições não-bônus (camada leve por cima
+  // do currículo). Aparecem no card de próxima ação — o foco do início da
+  // sessão — enquadrando o próximo passo como uma conquista de fala.
+  static const _missions = [
+    'Missão 1: Fale sem ler pela primeira vez',
+    'Missão 2: Melhore sua segunda tentativa',
+    'Missão 3: Corrija seu primeiro som difícil',
+    'Missão 4: Ganhe seus primeiros 5 minutos aprovados',
+    'Missão 5: Responda mais rápido',
+    'Missão 6: Use uma frase real de viagem',
+    'Missão 7: Complete seu primeiro bloco de fala ativa',
+  ];
+
+  String? _missionFor(String lessonId) {
+    var idx = 0;
+    for (final l in fase1Lessons) {
+      if (l.bonus) continue;
+      if (l.id == lessonId) {
+        return idx < _missions.length ? _missions[idx] : null;
+      }
+      idx++;
+    }
+    return null;
+  }
+
+  // #10 Survey de abandono: opções de motivo (valor p/ evento, rótulo p/ UI).
+  static const _abandonOptions = [
+    ('nao_entendi', 'Não entendi o que fazer'),
+    ('vergonha', 'Tive vergonha de gravar'),
+    ('microfone', 'O microfone não funcionou'),
+    ('dificil', 'Achei difícil'),
+    ('facil_demais', 'Achei fácil demais'),
+    ('sem_valor', 'Não vi valor'),
+    ('sem_tempo', 'Estou sem tempo'),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -247,6 +286,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ? 'Seu próximo passo: fazer seu primeiro teste de fala (~5 min).'
         : 'Seu próximo passo: treinar "${next.title}" e ganhar mais minutos '
             'aprovados.';
+    final mission = _missionFor(next.id);
     return Card(
       color: theme.colorScheme.secondaryContainer,
       child: InkWell(
@@ -263,7 +303,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text('Próxima melhor ação',
                         style: theme.textTheme.bodySmall),
                     const SizedBox(height: 4),
-                    Text(text, style: theme.textTheme.titleMedium),
+                    if (mission != null) ...[
+                      Text(mission,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                              color: theme.colorScheme.secondary,
+                              fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 2),
+                      Text(text, style: theme.textTheme.bodyMedium),
+                    ] else
+                      Text(text, style: theme.textTheme.titleMedium),
                   ],
                 ),
               ),
@@ -275,6 +323,39 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  // #10 Card de abandono: aparece quando a pessoa começou mas não fechou o
+  // 1º ciclo (gravou, mas não chegou ao antes/depois). Pergunta o porquê.
+  Widget _abandonCard(ThemeData theme) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('O que te impediu de continuar?',
+                  style: theme.textTheme.titleMedium),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final (val, label) in _abandonOptions)
+                    ActionChip(
+                      label: Text(label),
+                      onPressed: () => _answerAbandon(val),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+
+  void _answerAbandon(String reason) {
+    widget.analytics?.log('abandon_reason', {'reason': reason});
+    widget.store.setAskedAbandon();
+    setState(() => _abandonAnswered = true);
   }
 
   Future<void> _openLesson(Lesson lesson) async {
@@ -295,6 +376,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     final total = widget.store.totalApproved;
     final next = _nextLesson();
+    // #10: começou a praticar (gravou) mas não chegou ao antes/depois → perguntar.
+    final askAbandon = !_abandonAnswered &&
+        widget.store.hasDone('first_recording_completed') &&
+        !widget.store.hasDone('first_before_after_seen') &&
+        !widget.store.hasAskedAbandon;
     return Scaffold(
       appBar: AppBar(
         title: const Text('484 Method'),
@@ -341,6 +427,10 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
+              if (askAbandon) ...[
+                _abandonCard(theme),
+                const SizedBox(height: 12),
+              ],
               if (next != null) ...[
                 _nextBestActionCard(theme, next, total == Duration.zero),
                 const SizedBox(height: 12),

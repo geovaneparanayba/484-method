@@ -322,13 +322,14 @@ class _HomeScreenState extends State<HomeScreen> {
       final remaining = ProgressStore.firstMilestoneSeconds -
           widget.store.totalApproved.inSeconds;
       final remainingMin = (remaining / 60).ceil().clamp(1, 999);
-      text = 'Seu próximo passo: treinar "${next.title}" '
-          '(${next.items.length} tentativas de fala) e chegar mais perto do '
-          'seu primeiro marco — faltam ~${remainingMin}min aprovados.';
+      text = 'Seu próximo passo: treinar "${next.title}" — foco: '
+          '${next.microSkill} (${next.items.length} tentativas de fala) e '
+          'chegar mais perto do seu primeiro marco — faltam '
+          '~${remainingMin}min aprovados.';
     } else {
-      text = 'Seu próximo passo: treinar "${next.title}" '
-          '(${next.items.length} tentativas de fala) e ganhar mais minutos '
-          'aprovados na sua jornada.';
+      text = 'Seu próximo passo: treinar "${next.title}" — foco: '
+          '${next.microSkill} (${next.items.length} tentativas de fala) e '
+          'ganhar mais minutos aprovados na sua jornada.';
     }
     final mission = _missionFor(next.id);
     return Card(

@@ -7,6 +7,7 @@ class Lesson {
     required this.id,
     required this.title,
     required this.objective,
+    required this.microSkill,
     required this.approvalThreshold,
     required this.items,
     this.minPhoneme = 65,
@@ -16,6 +17,12 @@ class Lesson {
 
   final String id;
   final String title;
+
+  /// Micro-habilidade trabalhada nesta lição (a coluna "Foco" de
+  /// docs/curriculo-fase1.md), em poucas palavras — usada na dashboard
+  /// (#9 "próxima melhor ação") pra dizer exatamente o que a pessoa vai
+  /// treinar, em vez de só "treinar a lição X".
+  final String microSkill;
 
   /// Lição opcional: não é exigida para desbloquear a próxima lição do
   /// currículo principal. Mesmo bloco e assunto, mas com palavras/frases

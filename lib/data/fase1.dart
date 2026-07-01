@@ -42,6 +42,7 @@ const licao01 = Lesson(
   title: 'Quebrando o gelo',
   objective: 'Você vai falar 5 palavras em inglês que já conhece — '
       'e descobrir que seu inglês já começou.',
+  microSkill: 'Confiança e familiaridade',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -98,6 +99,7 @@ const licao02 = Lesson(
   title: 'Palavras do celular',
   objective: 'Estas 5 palavras estão no seu celular agora mesmo — '
       'você só vai aprender o som certo delas.',
+  microSkill: 'Inglês digital cotidiano',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -154,6 +156,7 @@ const licao03 = Lesson(
   title: 'Comida',
   objective: 'Comida é o inglês mais gostoso de treinar — '
       'e o que você mais vai usar em viagem.',
+  microSkill: 'Vocabulário simples e útil',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -210,6 +213,7 @@ const licao04 = Lesson(
   title: 'Viagem',
   objective: 'As 5 palavras que te levam do aeroporto ao hotel — '
       'inglês de sobrevivência.',
+  microSkill: 'Inglês de sobrevivência',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -267,6 +271,7 @@ const licao06 = Lesson(
   title: 'Revisão de fala — Zona 1',
   objective: 'Uma palavra de cada lição que você já fez neste bloco. '
       'Veja como está sua pronúncia até aqui.',
+  microSkill: 'Progresso visível',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -324,6 +329,7 @@ const licao07 = Lesson(
   title: 'Desafio: vocabulário avançado',
   objective: 'Bônus opcional — mesmo assunto do bloco, palavras mais '
       'longas. Não precisa fazer para seguir em frente.',
+  microSkill: 'Vocabulário mais longo, mesmo assunto',
   approvalThreshold: 75,
   bonus: true,
   items: [
@@ -386,6 +392,7 @@ const licao09 = Lesson(
   title: 'Palavras com ritmo diferente',
   objective: 'Você conhece estas palavras — mas o ritmo em inglês é '
       'diferente. Ouça onde está a força e copie.',
+  microSkill: 'Sílaba forte e redução',
   approvalThreshold: 75,
   // Lição de ritmo: a prosódia entra no critério (pega sílaba forte errada).
   minProsody: 70,
@@ -445,6 +452,7 @@ const licao10 = Lesson(
   title: 'Som enganoso',
   objective: 'Estas palavras parecem fáceis porque são parecidas com o '
       'português — e é exatamente aí que o sotaque aparece. Ouça com atenção.',
+  microSkill: 'Reduzir pronúncia aportuguesada',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -502,6 +510,7 @@ const licao11 = Lesson(
   title: 'Uso diferente',
   objective: 'Estas palavras existem no seu dia a dia, mas o significado '
       'em inglês não é o que você imagina. Preste atenção no sentido real.',
+  microSkill: 'Significado real no inglês',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -558,6 +567,7 @@ const licao12 = Lesson(
   title: 'Revisão de fala — Zona 2',
   objective: 'Uma palavra de cada lição deste bloco — ritmo, sílaba forte '
       'e os sons que mais enganam o ouvido brasileiro.',
+  microSkill: 'Progresso visível',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -606,6 +616,7 @@ const licao13 = Lesson(
   title: 'Desafio: ritmo avançado',
   objective: 'Bônus opcional — palavras mais longas com sílaba forte '
       'traiçoeira. Não precisa fazer para seguir em frente.',
+  microSkill: 'Sílaba forte traiçoeira, palavras longas',
   approvalThreshold: 75,
   minProsody: 70,
   bonus: true,
@@ -668,6 +679,7 @@ const licao14 = Lesson(
   title: 'Primeiros chunks',
   objective: 'Agora você sai da palavra solta: 5 frases curtas que '
       'saem prontas, sem montar palavra por palavra.',
+  microSkill: 'Da palavra isolada à frase curta',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -724,6 +736,7 @@ const licao15 = Lesson(
   title: 'Frases de cortesia',
   objective: 'As frases que destravam qualquer conversa: educação '
       'funciona em qualquer país.',
+  microSkill: 'Comunicação imediata',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -780,6 +793,7 @@ const licao16 = Lesson(
   title: 'Pequenos pedidos',
   objective: 'Pedir é a fala mais útil que existe: café, ajuda e '
       'tempo — tudo em frases prontas.',
+  microSkill: 'Fala funcional',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -836,6 +850,7 @@ const licao17 = Lesson(
   title: 'Casa e lazer',
   objective: 'Palavras de casa e do tempo livre que você já usa em '
       'português — hora de acertar o som em inglês.',
+  microSkill: 'Vocabulário doméstico e social',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -892,6 +907,7 @@ const licao18 = Lesson(
   title: 'Compras e dinheiro',
   objective: 'Inglês prático para qualquer loja: pagar, pedir desconto '
       'e usar cupom sem travar.',
+  microSkill: 'Inglês prático de consumo',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -949,6 +965,7 @@ const licao19 = Lesson(
   title: 'Revisão de fala — final',
   objective: 'Uma palavra de cada lição deste bloco — feche o básico '
       'vendo o quanto sua fala evoluiu desde a lição 1.',
+  microSkill: 'Fecha o básico, evolução visível',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -1006,6 +1023,7 @@ const licao20 = Lesson(
   title: 'Desafio: pedidos mais longos',
   objective: 'Bônus opcional — frases mais longas e educadas para usar em '
       'qualquer loja ou atendimento. Fecha o básico para quem quer mais.',
+  microSkill: 'Pedidos educados mais longos',
   approvalThreshold: 75,
   bonus: true,
   items: [
@@ -1068,6 +1086,7 @@ const licao21 = Lesson(
   title: 'Variações de "How are you?"',
   objective: 'A pergunta que abre toda conversa em inglês, em 5 jeitos '
       'diferentes de perguntar a mesma coisa.',
+  microSkill: 'Abrir qualquer conversa',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -1125,6 +1144,7 @@ const licao22 = Lesson(
   title: 'Respondendo que está bem',
   objective: 'Agora a resposta: 5 jeitos de dizer que você está bem sem '
       'travar.',
+  microSkill: 'Resposta automática ao "how are you"',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -1182,6 +1202,7 @@ const licao23 = Lesson(
   title: 'Falando do dia / weather',
   objective: 'O assunto mais usado em qualquer conversa pequena em inglês: '
       'o tempo. 5 frases para nunca travar nisso.',
+  microSkill: 'Small talk universal',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -1239,6 +1260,7 @@ const licao24 = Lesson(
   title: '"It\'s a beautiful day to…"',
   objective: 'Um molde só, 5 finais diferentes — assim você fala de um dia '
       'bonito sem decorar frase nova cada vez.',
+  microSkill: 'Molde único, 5 finais',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -1301,6 +1323,7 @@ const licao25 = Lesson(
   title: '"What\'s the plan…?"',
   objective: 'A pergunta que organiza qualquer combinação — do café da '
       'manhã ao fim de semana — em 5 momentos diferentes.',
+  microSkill: 'Combinar atividades',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -1361,6 +1384,7 @@ const licao26 = Lesson(
   title: 'Revisão de fala — Zona 4',
   objective: 'Uma frase de cada lição que você já fez neste bloco. Veja '
       'como está sua conversa do dia a dia até aqui.',
+  microSkill: 'Progresso visível',
   approvalThreshold: 75,
   items: [
     LessonItem(
@@ -1421,6 +1445,7 @@ const licao27 = Lesson(
   title: 'Desafio: conversa mais natural',
   objective: 'Bônus opcional — o mesmo small talk do bloco, mas em frases '
       'mais longas e naturais. Não precisa fazer para concluir a Fase 1.',
+  microSkill: 'Mesmo small talk, frases mais longas e naturais',
   approvalThreshold: 75,
   bonus: true,
   items: [

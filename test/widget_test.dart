@@ -96,6 +96,43 @@ void main() {
     expect(find.textContaining('Regra do jogo'), findsOneWidget);
   });
 
+  testWidgets(
+      'dashboard usa linguagem de treino: trilha/zona, meta de hoje e '
+      'próxima ação com foco', (tester) async {
+    final store = await _emptyStore();
+    // Progresso > zero: sai do card de "primeira tentativa" genérico e usa
+    // o card com o foco da próxima lição (o que este teste quer checar).
+    await store.addApproved(const Duration(seconds: 20));
+    // Viewport bem alto: a lista de lições fica longa (25 lições + cards de
+    // progresso) e o teste precisa achar texto sem depender de scroll.
+    tester.view.physicalSize = const Size(1200, 6000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(
+      home: HomeScreen(
+        store: store,
+        entitlement: await LocalEntitlementService.load(),
+        assessor: _FakeAssessor(),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    // #5/#6: nada de "Fase"/"Bloco" — linguagem de treino, não de curso.
+    expect(find.textContaining('Trilha 1 — Saia do inglês mudo'),
+        findsOneWidget);
+    expect(find.textContaining('Zona 1 — Reconhecimento e confiança'),
+        findsOneWidget);
+    expect(find.textContaining('tentativas de fala'), findsWidgets);
+    // #7: meta de hoje e primeiro marco aparecem antes da jornada 484h.
+    expect(find.textContaining('Meta de hoje'), findsOneWidget);
+    expect(find.textContaining('Primeiro marco'), findsOneWidget);
+    // #9: a próxima ação nomeia o treino e a micro-habilidade (foco).
+    expect(find.textContaining('foco: ${licao01.microSkill}'),
+        findsOneWidget);
+    // #10: "Modo desafio" foi renomeado.
+    expect(find.text('Modo precisão'), findsOneWidget);
+    expect(find.textContaining('Modo desafio'), findsNothing);
+  });
+
   testWidgets('onboarding só libera após consentimento de voz',
       (tester) async {
     final store = await _emptyStore();
@@ -115,7 +152,8 @@ void main() {
 
   test('feedback varia por desempenho e aponta o som fraco', () {
     const lesson = Lesson(
-      id: 't', title: 't', objective: 't', approvalThreshold: 75, items: [],
+      id: 't', title: 't', objective: 't', microSkill: 't',
+      approvalThreshold: 75, items: [],
     );
     PronunciationResult mk(double acc, double minPhon, {String syl = ''}) =>
         PronunciationResult(
@@ -141,6 +179,7 @@ void main() {
       id: 't',
       title: 't',
       objective: 't',
+      microSkill: 't',
       approvalThreshold: 75,
       minProsody: 70,
       items: [],
@@ -158,7 +197,8 @@ void main() {
 
   test('modo desafio exige pronúncia próxima da nativa', () {
     const lesson = Lesson(
-      id: 't', title: 't', objective: 't', approvalThreshold: 75, items: [],
+      id: 't', title: 't', objective: 't', microSkill: 't',
+      approvalThreshold: 75, items: [],
     );
     // Passa no modo normal (>=75), mas não no desafio (exige accuracy >=90).
     expect(lesson.approves(82, 78, 90), isTrue);

@@ -193,8 +193,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openWordMemory() {
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => const WordMemoryScreen(),
+      builder: (_) => WordMemoryScreen(onReviewWord: _reviewWord),
     ));
+  }
+
+  /// "Revisar agora": abre o treino da 1ª lição que contém a palavra, já no
+  /// item dela (via startItemIndex) — em vez de retomar o índice salvo.
+  void _reviewWord(String word) {
+    for (final lesson in fase1Lessons) {
+      final idx = lesson.items.indexWhere((it) => it.text == word);
+      if (idx >= 0) {
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => LessonScreen(
+            lesson: lesson,
+            assessor: widget.assessor,
+            store: widget.store,
+            analytics: widget.analytics,
+            rigorous: widget.store.rigorousMode,
+            startItemIndex: idx,
+          ),
+        )).then((_) {
+          if (mounted) setState(() {});
+        });
+        return;
+      }
+    }
   }
 
   Future<void> _openStats() async {

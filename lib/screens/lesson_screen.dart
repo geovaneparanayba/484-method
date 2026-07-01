@@ -24,6 +24,7 @@ class LessonScreen extends StatefulWidget {
     this.store,
     this.analytics,
     this.rigorous = false,
+    this.startItemIndex,
   });
 
   final Lesson lesson;
@@ -36,6 +37,10 @@ class LessonScreen extends StatefulWidget {
   final ProgressStore? store;
 
   final AnalyticsService? analytics;
+
+  /// Quando presente, começa neste item — usado por "Revisar agora" do mapa
+  /// de fala, em vez de retomar o índice salvo.
+  final int? startItemIndex;
 
   @override
   State<LessonScreen> createState() => _LessonScreenState();
@@ -95,7 +100,9 @@ class _LessonScreenState extends State<LessonScreen>
     // fecha a lição na metade e volta depois é jogado de volta pro início
     // (achado real: usuários que já tinham passado 3-4 palavras reabriram a
     // lição, caíram na 1ª palavra de novo, reprovaram e desistiram).
-    final saved = widget.store?.itemIndexFor(widget.lesson.id) ?? 0;
+    final saved = widget.startItemIndex ??
+        widget.store?.itemIndexFor(widget.lesson.id) ??
+        0;
     _index = saved.clamp(0, widget.lesson.items.length - 1);
     _pulseController = AnimationController(
       vsync: this,

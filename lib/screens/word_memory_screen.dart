@@ -78,7 +78,10 @@ class WordStat {
 /// Read-only; as palavras já passaram do Livro Aberto, então exibi-las não
 /// fere o princípio som-first.
 class WordMemoryScreen extends StatefulWidget {
-  const WordMemoryScreen({super.key});
+  const WordMemoryScreen({super.key, this.onReviewWord});
+
+  /// Chamado ao tocar num ponto "a revisar" → abre o treino daquela palavra.
+  final void Function(String word)? onReviewWord;
 
   @override
   State<WordMemoryScreen> createState() => _WordMemoryScreenState();
@@ -163,6 +166,7 @@ class _WordMemoryScreenState extends State<WordMemoryScreen> {
 
   Widget _wordTile(ThemeData theme, WordStat s) {
     final color = _colorFor(s.bestAccuracy);
+    final canReview = !s.mastered && widget.onReviewWord != null;
     return Card(
       child: ListTile(
         leading: CircleAvatar(
@@ -171,13 +175,15 @@ class _WordMemoryScreenState extends State<WordMemoryScreen> {
               color: color, size: 20),
         ),
         title: Text(s.word),
-        subtitle: Text(
-            '${s.attempts} ${s.attempts == 1 ? "tentativa" : "tentativas"}'),
+        subtitle: Text(canReview
+            ? 'Toque para treinar de novo'
+            : '${s.attempts} ${s.attempts == 1 ? "tentativa" : "tentativas"}'),
         trailing: Text(
           '${s.bestAccuracy.round()}',
           style: theme.textTheme.titleMedium
               ?.copyWith(color: color, fontWeight: FontWeight.bold),
         ),
+        onTap: canReview ? () => widget.onReviewWord!(s.word) : null,
       ),
     );
   }

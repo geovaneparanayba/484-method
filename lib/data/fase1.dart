@@ -264,7 +264,7 @@ const licao04 = Lesson(
 /// reaproveitando 100% dos áudios já gerados.
 const licao06 = Lesson(
   id: 'fase1-licao06',
-  title: 'Revisão Bloco 1',
+  title: 'Revisão de fala — Zona 1',
   objective: 'Uma palavra de cada lição que você já fez neste bloco. '
       'Veja como está sua pronúncia até aqui.',
   approvalThreshold: 75,
@@ -555,7 +555,7 @@ const licao11 = Lesson(
 /// Lição 12 — "Revisão Bloco 2": uma palavra de cada lição do bloco.
 const licao12 = Lesson(
   id: 'fase1-licao12',
-  title: 'Revisão Bloco 2',
+  title: 'Revisão de fala — Zona 2',
   objective: 'Uma palavra de cada lição deste bloco — ritmo, sílaba forte '
       'e os sons que mais enganam o ouvido brasileiro.',
   approvalThreshold: 75,
@@ -946,7 +946,7 @@ const licao18 = Lesson(
 /// fecha o básico (Fase 1).
 const licao19 = Lesson(
   id: 'fase1-licao19',
-  title: 'Revisão final',
+  title: 'Revisão de fala — final',
   objective: 'Uma palavra de cada lição deste bloco — feche o básico '
       'vendo o quanto sua fala evoluiu desde a lição 1.',
   approvalThreshold: 75,
@@ -1358,7 +1358,7 @@ const licao25 = Lesson(
 /// reaproveitando 100% dos áudios já gerados.
 const licao26 = Lesson(
   id: 'fase1-licao26',
-  title: 'Revisão Bloco 4',
+  title: 'Revisão de fala — Zona 4',
   objective: 'Uma frase de cada lição que você já fez neste bloco. Veja '
       'como está sua conversa do dia a dia até aqui.',
   approvalThreshold: 75,

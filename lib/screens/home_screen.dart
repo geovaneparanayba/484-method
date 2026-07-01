@@ -54,17 +54,23 @@ class _HomeScreenState extends State<HomeScreen> {
   // Survey de abandono respondido nesta sessão (esconde o card na hora).
   bool _abandonAnswered = false;
 
-  // #5 Missões: rótulos pras primeiras lições não-bônus (camada leve por cima
-  // do currículo). Aparecem no card de próxima ação — o foco do início da
-  // sessão — enquadrando o próximo passo como uma conquista de fala.
+  // #8: por padrão só mostra concluídos + treino atual + poucos bloqueados —
+  // muitos cadeados em sequência davam sensação de caminho longo e cansativo.
+  bool _showAllLessons = false;
+
+  // #5/#13 Missões: rótulos pras primeiras lições não-bônus (camada leve por
+  // cima do currículo). Sem número fixo no texto — o índice da missão não é
+  // o mesmo da lição (bônus não contam), então numerar as duas confundia
+  // (ex.: "Missão 7" dentro do card da lição 8). A UI sempre prefixa com
+  // "Missão atual" em vez de expor esse índice.
   static const _missions = [
-    'Missão 1: Fale sem ler pela primeira vez',
-    'Missão 2: Melhore sua segunda tentativa',
-    'Missão 3: Corrija seu primeiro som difícil',
-    'Missão 4: Ganhe seus primeiros 5 minutos aprovados',
-    'Missão 5: Responda mais rápido',
-    'Missão 6: Use uma frase real de viagem',
-    'Missão 7: Complete seu primeiro bloco de fala ativa',
+    'Fale sem ler pela primeira vez',
+    'Melhore sua segunda tentativa',
+    'Corrija seu primeiro som difícil',
+    'Ganhe seus primeiros 5 minutos aprovados',
+    'Responda mais rápido',
+    'Use uma frase real de viagem',
+    'Complete seu primeiro bloco de fala ativa',
   ];
 
   String? _missionFor(String lessonId) {
@@ -305,10 +311,25 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Card de uma única ação clara no topo do dashboard (#8): evita o paradoxo
   /// de escolha — diz o próximo passo e leva direto a ele.
   Widget _nextBestActionCard(ThemeData theme, Lesson next, bool isFirst) {
-    final text = isFirst
-        ? 'Seu próximo passo: fazer seu primeiro teste de fala (~5 min).'
-        : 'Seu próximo passo: treinar "${next.title}" e ganhar mais minutos '
-            'aprovados.';
+    // #9: a ação precisa nomear o treino, a micro-habilidade e a recompensa
+    // concreta mais próxima — meta de hoje ou primeiro marco, o que fizer
+    // mais sentido pra quem ainda não chegou lá.
+    final String text;
+    if (isFirst) {
+      text = 'Seu próximo passo: fazer sua primeira tentativa de fala '
+          '(~5 min) e destravar sua meta de hoje.';
+    } else if (!widget.store.reachedFirstMilestone) {
+      final remaining = ProgressStore.firstMilestoneSeconds -
+          widget.store.totalApproved.inSeconds;
+      final remainingMin = (remaining / 60).ceil().clamp(1, 999);
+      text = 'Seu próximo passo: treinar "${next.title}" '
+          '(${next.items.length} tentativas de fala) e chegar mais perto do '
+          'seu primeiro marco — faltam ~${remainingMin}min aprovados.';
+    } else {
+      text = 'Seu próximo passo: treinar "${next.title}" '
+          '(${next.items.length} tentativas de fala) e ganhar mais minutos '
+          'aprovados na sua jornada.';
+    }
     final mission = _missionFor(next.id);
     return Card(
       color: theme.colorScheme.secondaryContainer,
@@ -327,7 +348,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: theme.textTheme.bodySmall),
                     const SizedBox(height: 4),
                     if (mission != null) ...[
-                      Text(mission,
+                      Text('Missão atual: $mission',
                           style: theme.textTheme.titleMedium?.copyWith(
                               color: theme.colorScheme.secondary,
                               fontWeight: FontWeight.w600)),
@@ -346,6 +367,253 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  /// #7: meta curta do dia — o 1º degrau da hierarquia de progresso, antes
+  /// do primeiro marco e da jornada de 484h.
+  Widget _todayGoalCard(ThemeData theme) {
+    final today = widget.store.approvedToday;
+    final goal = ProgressStore.dailyGoalSeconds;
+    final reached = today.inSeconds >= goal;
+    final remaining = (goal - today.inSeconds).clamp(0, goal);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Meta de hoje: ${_format(Duration(seconds: goal))} aprovados',
+                style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: (today.inSeconds / goal).clamp(0.0, 1.0),
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(4),
+              color: theme.colorScheme.primary,
+              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              reached
+                  ? 'Você bateu sua meta de hoje. 🎉'
+                  : 'Você fez ${_format(today)}. '
+                      'Faltam ${_format(Duration(seconds: remaining))}.',
+              style: theme.textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// #7: primeiro marco (10min aprovados) — a ponte entre a meta de hoje e a
+  /// jornada de 484h. Some quando alcançado.
+  Widget _firstMilestoneCard(ThemeData theme) {
+    final total = widget.store.totalApproved;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+                'Primeiro marco: '
+                '${_format(Duration(seconds: ProgressStore.firstMilestoneSeconds))} '
+                'aprovados',
+                style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: widget.store.firstMilestoneFraction,
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(4),
+              color: theme.colorScheme.secondary,
+              backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.15),
+            ),
+            const SizedBox(height: 8),
+            Text('${_format(total)} de ${_format(Duration(seconds: ProgressStore.firstMilestoneSeconds))}',
+                style: theme.textTheme.bodyMedium),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// #10: "Modo precisão" (ex-"Modo desafio") — copy menos intimidante, sem
+  /// prometer "pronúncia nativa"; avisa quem ainda está construindo base.
+  Widget _precisionModeCard(ThemeData theme) {
+    final hasEnoughBase =
+        widget.store.totalApproved.inSeconds >= 30 * 60;
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SwitchListTile(
+            value: widget.store.rigorousMode,
+            onChanged: (v) async {
+              if (v && !await _confirmEnableRigorous()) return;
+              await widget.store.setRigorousMode(v);
+              setState(() {});
+            },
+            title: const Text('Modo precisão'),
+            subtitle: const Text(
+                'Use quando quiser treinar com critério mais exigente de '
+                'clareza, ritmo e pronúncia. Recomendado depois dos '
+                'primeiros 30 minutos aprovados.'),
+            secondary: const Icon(Icons.fitness_center),
+          ),
+          if (!hasEnoughBase)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Text(
+                'Você ainda está construindo base. O modo precisão pode '
+                'ficar difícil demais no começo.',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// #8: reduz o efeito visual de muitos bloqueios — mostra concluídos, o
+  /// treino atual e só os próximos poucos bloqueados; o resto fica atrás de
+  /// um botão "Ver próximos treinos da trilha".
+  List<Widget> _lessonList(ThemeData theme) {
+    const lockedVisibleLimit = 3;
+    final next = _nextLesson();
+    final nextIndex = next == null ? -1 : fase1Lessons.indexOf(next);
+    final widgets = <Widget>[];
+    var lockedShown = 0;
+    var hiddenCount = 0;
+
+    for (final (i, lesson) in fase1Lessons.indexed) {
+      final completed = widget.store.isLessonCompleted(lesson.id);
+      final paywalled =
+          i >= kFreeLessonCount && !widget.entitlement.hasFounderAccess;
+      // O pré-requisito é a lição anterior NÃO bônus — lições bônus nunca
+      // bloqueiam (nem precisam de) progressão.
+      int prereq = i - 1;
+      while (prereq >= 0 && fase1Lessons[prereq].bonus) {
+        prereq--;
+      }
+      final progressionUnlocked = prereq < 0 ||
+          widget.store.isLessonCompleted(fase1Lessons[prereq].id);
+      final unlocked = !paywalled && progressionUnlocked;
+      final isCurrent = i == nextIndex;
+
+      bool visible;
+      if (_showAllLessons || completed || isCurrent || unlocked) {
+        visible = true;
+      } else if (lockedShown < lockedVisibleLimit) {
+        visible = true;
+        lockedShown++;
+      } else {
+        visible = false;
+      }
+
+      if (!visible) {
+        hiddenCount++;
+        continue;
+      }
+
+      if (i == 0 || i == 6 || i == 11 || i == 18) {
+        widgets.add(Padding(
+          padding: EdgeInsets.only(top: i == 0 ? 0 : 16, bottom: 4),
+          child: Text(
+            switch (i) {
+              0 => 'Zona 1 — Reconhecimento e confiança',
+              6 => 'Zona 2 — Som e sílaba forte',
+              11 => 'Zona 3 — Da palavra à frase',
+              _ => 'Zona 4 — Conversa do dia a dia',
+            },
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.secondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ));
+      }
+
+      final mission = _missionFor(lesson.id);
+      final String subtitle;
+      if (paywalled) {
+        subtitle = 'Beta Fundador';
+      } else if (!progressionUnlocked) {
+        subtitle = 'Complete a missão anterior para liberar';
+      } else if (lesson.bonus) {
+        subtitle =
+            'Bônus opcional · ${lesson.items.length} tentativas de fala · ~5 min';
+      } else {
+        subtitle = '${lesson.items.length} tentativas de fala · ~5 min';
+      }
+      final IconData trailing;
+      if (paywalled) {
+        trailing = Icons.workspace_premium_outlined;
+      } else if (!progressionUnlocked) {
+        trailing = Icons.lock_outline;
+      } else {
+        trailing = completed ? Icons.replay : Icons.play_arrow;
+      }
+      widgets.add(Card(
+        child: ListTile(
+          // Paywalled fica tocável para mostrar o aviso do gate.
+          enabled: unlocked || paywalled,
+          leading: CircleAvatar(
+            backgroundColor: completed
+                ? theme.colorScheme.secondary.withValues(alpha: 0.18)
+                : theme.colorScheme.surfaceContainerHighest,
+            foregroundColor: completed
+                ? theme.colorScheme.secondary
+                : theme.colorScheme.onSurface,
+            child: completed
+                ? const Icon(Icons.check, size: 20)
+                : Text('${i + 1}'),
+          ),
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(child: Text(lesson.title)),
+              if (lesson.bonus) ...[
+                const SizedBox(width: 6),
+                Icon(Icons.star, size: 16, color: theme.colorScheme.secondary),
+              ],
+            ],
+          ),
+          isThreeLine: mission != null && !completed,
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (mission != null && !completed)
+                Text('Missão atual: $mission',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.secondary,
+                        fontWeight: FontWeight.w600)),
+              Text(subtitle),
+            ],
+          ),
+          trailing: Icon(trailing),
+          onTap: paywalled
+              ? _openPaywall
+              : unlocked
+                  ? () => _openLesson(lesson)
+                  : null,
+        ),
+      ));
+    }
+
+    if (hiddenCount > 0 && !_showAllLessons) {
+      widgets.add(Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: OutlinedButton(
+          onPressed: () => setState(() => _showAllLessons = true),
+          child: const Text('Ver próximos treinos da trilha'),
+        ),
+      ));
+    }
+
+    return widgets;
   }
 
   // #10 Card de abandono: aparece quando a pessoa começou mas não fechou o
@@ -458,28 +726,38 @@ class _HomeScreenState extends State<HomeScreen> {
                 _nextBestActionCard(theme, next, total == Duration.zero),
                 const SizedBox(height: 12),
               ],
+              // #7: meta de hoje (curta e tangível) antes do primeiro marco
+              // e da jornada de 484h — hierarquia do mais imediato pro mais
+              // distante, pra "1min aprovado" não parecer minúsculo demais.
+              _todayGoalCard(theme),
+              const SizedBox(height: 12),
+              if (!widget.store.reachedFirstMilestone) ...[
+                _firstMilestoneCard(theme),
+                const SizedBox(height: 12),
+              ],
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Sua jornada de 484 horas',
-                          style: theme.textTheme.titleMedium),
-                      const SizedBox(height: 12),
+                      Text('Jornada 484h iniciada',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant)),
+                      const SizedBox(height: 8),
                       LinearProgressIndicator(
                         value: widget.store.goalFraction,
-                        minHeight: 12,
-                        borderRadius: BorderRadius.circular(6),
+                        minHeight: 8,
+                        borderRadius: BorderRadius.circular(4),
                         color: theme.colorScheme.secondary,
                         backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.15),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Text(
                         total.inSeconds > 0
-                            ? '${_format(total)} de treino aprovado'
+                            ? '${_format(total)} de treino aprovado no total'
                             : 'Comece o primeiro treino hoje.',
-                        style: theme.textTheme.bodyLarge,
+                        style: theme.textTheme.bodySmall,
                       ),
                       if (widget.store.streakDays > 0) ...[
                         const SizedBox(height: 4),
@@ -494,128 +772,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              Card(
-                child: SwitchListTile(
-                  value: widget.store.rigorousMode,
-                  onChanged: (v) async {
-                    if (v && !await _confirmEnableRigorous()) return;
-                    await widget.store.setRigorousMode(v);
-                    setState(() {});
-                  },
-                  title: const Text('Modo desafio'),
-                  subtitle: const Text(
-                      'Só aprova com pronúncia bem próxima da nativa — '
-                      'vale para qualquer tentativa a partir de agora.'),
-                  secondary: const Icon(Icons.fitness_center),
-                ),
-              ),
+              _precisionModeCard(theme),
               const SizedBox(height: 16),
-              Text('Fase 1 — Inglês que Você Já Conhece',
+              Text('Trilha 1 — Saia do inglês mudo',
                   style: theme.textTheme.titleMedium),
+              Text('Inglês que você já conhece',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant)),
               const SizedBox(height: 8),
-              // Dois gates: o de pagamento (lições além das grátis exigem
-              // Beta Fundador) e o progressivo (a lição N abre quando a N-1
-              // foi concluída; a primeira está sempre aberta).
-              for (final (i, lesson) in fase1Lessons.indexed) ...[
-                if (i == 0 || i == 6 || i == 11 || i == 18)
-                  Padding(
-                    padding: EdgeInsets.only(top: i == 0 ? 0 : 16, bottom: 4),
-                    child: Text(
-                      switch (i) {
-                        0 => 'Bloco 1 — Reconhecimento e confiança',
-                        6 => 'Bloco 2 — Som e sílaba forte',
-                        11 => 'Bloco 3 — Da palavra à frase',
-                        _ => 'Bloco 4 — Conversa do dia a dia',
-                      },
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: theme.colorScheme.secondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                Builder(builder: (context) {
-                  final completed =
-                      widget.store.isLessonCompleted(lesson.id);
-                  final paywalled = i >= kFreeLessonCount &&
-                      !widget.entitlement.hasFounderAccess;
-                  // O pré-requisito é a lição anterior NÃO bônus — lições
-                  // bônus nunca bloqueiam (nem precisam de) progressão.
-                  int prereq = i - 1;
-                  while (prereq >= 0 && fase1Lessons[prereq].bonus) {
-                    prereq--;
-                  }
-                  final progressionUnlocked = prereq < 0 ||
-                      widget.store.isLessonCompleted(fase1Lessons[prereq].id);
-                  final unlocked = !paywalled && progressionUnlocked;
-                  final mission = _missionFor(lesson.id);
-                  final String subtitle;
-                  if (paywalled) {
-                    subtitle = 'Beta Fundador';
-                  } else if (!progressionUnlocked) {
-                    subtitle = 'Conclua o treino anterior para desbloquear';
-                  } else if (lesson.bonus) {
-                    subtitle =
-                        'Bônus opcional · ${lesson.items.length} palavras · ~5 min';
-                  } else {
-                    subtitle = '${lesson.items.length} palavras · ~5 min';
-                  }
-                  final IconData trailing;
-                  if (paywalled) {
-                    trailing = Icons.workspace_premium_outlined;
-                  } else if (!progressionUnlocked) {
-                    trailing = Icons.lock_outline;
-                  } else {
-                    trailing = completed ? Icons.replay : Icons.play_arrow;
-                  }
-                  return Card(
-                    child: ListTile(
-                      // Paywalled fica tocável para mostrar o aviso do gate.
-                      enabled: unlocked || paywalled,
-                      leading: CircleAvatar(
-                        backgroundColor: completed
-                            ? theme.colorScheme.secondary.withValues(alpha: 0.18)
-                            : theme.colorScheme.surfaceContainerHighest,
-                        foregroundColor: completed
-                            ? theme.colorScheme.secondary
-                            : theme.colorScheme.onSurface,
-                        child: completed
-                            ? const Icon(Icons.check, size: 20)
-                            : Text('${i + 1}'),
-                      ),
-                      title: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(child: Text(lesson.title)),
-                          if (lesson.bonus) ...[
-                            const SizedBox(width: 6),
-                            Icon(Icons.star,
-                                size: 16, color: theme.colorScheme.secondary),
-                          ],
-                        ],
-                      ),
-                      isThreeLine: mission != null && !completed,
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (mission != null && !completed)
-                            Text(mission,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.secondary,
-                                    fontWeight: FontWeight.w600)),
-                          Text(subtitle),
-                        ],
-                      ),
-                      trailing: Icon(trailing),
-                      onTap: paywalled
-                          ? _openPaywall
-                          : unlocked
-                              ? () => _openLesson(lesson)
-                              : null,
-                    ),
-                  );
-                }),
-              ],
+              ..._lessonList(theme),
             ],
           ),
         ),

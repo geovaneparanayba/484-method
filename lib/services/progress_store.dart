@@ -25,9 +25,18 @@ class ProgressStore {
   static const _kAhaAnswered = 'aha_answered';
   static const _kAbandonAsked = 'abandon_asked';
   static const _kItemIndexPrefix = 'lesson_item_index_';
+  static const _kApprovedTodaySeconds = 'approved_seconds_today';
+  static const _kApprovedTodayDate = 'approved_seconds_today_date';
 
   /// Meta do produto: 484 horas de prática aprovada.
   static const goalSeconds = 484 * 3600;
+
+  /// Meta curta do dia (#7): mais tangível que a jornada de 484h.
+  static const dailyGoalSeconds = 3 * 60;
+
+  /// Primeiro marco (#7): entre a meta diária e as 484h, um objetivo
+  /// alcançável em poucos dias que dá a primeira sensação real de progresso.
+  static const firstMilestoneSeconds = 10 * 60;
 
   final SharedPreferences _prefs;
 
@@ -72,12 +81,32 @@ class ProgressStore {
   double get goalFraction =>
       (totalApproved.inSeconds / goalSeconds).clamp(0.0, 1.0);
 
+  /// Tempo aprovado hoje (#7): zera automaticamente ao virar o dia.
+  Duration get approvedToday {
+    final today = _ymd(DateTime.now());
+    if (_prefs.getString(_kApprovedTodayDate) != today) return Duration.zero;
+    return Duration(seconds: _prefs.getInt(_kApprovedTodaySeconds) ?? 0);
+  }
+
+  double get firstMilestoneFraction =>
+      (totalApproved.inSeconds / firstMilestoneSeconds).clamp(0.0, 1.0);
+
+  bool get reachedFirstMilestone =>
+      totalApproved.inSeconds >= firstMilestoneSeconds;
+
   /// Soma tempo aprovado e atualiza o streak conforme o dia da prática.
   Future<void> addApproved(Duration d) async {
     await _prefs.setInt(
         _kApprovedSeconds, totalApproved.inSeconds + d.inSeconds);
 
     final today = _ymd(DateTime.now());
+    if (_prefs.getString(_kApprovedTodayDate) != today) {
+      await _prefs.setInt(_kApprovedTodaySeconds, d.inSeconds);
+      await _prefs.setString(_kApprovedTodayDate, today);
+    } else {
+      await _prefs.setInt(
+          _kApprovedTodaySeconds, approvedToday.inSeconds + d.inSeconds);
+    }
     final lastDay = _prefs.getString(_kLastPracticeDay);
     if (lastDay != today) {
       final yesterday =

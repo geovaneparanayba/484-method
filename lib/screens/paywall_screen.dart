@@ -41,7 +41,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 Icon(Icons.workspace_premium,
                     size: 64, color: theme.colorScheme.primary),
                 const SizedBox(height: 16),
-                Text('Desbloqueie a Fase 1 completa',
+                Text('Desbloqueie a Trilha 1 completa',
                     style: theme.textTheme.headlineMedium
                         ?.copyWith(fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center),
@@ -58,7 +58,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 _benefit(theme, Icons.record_voice_over,
                     'Feedback de pronúncia em português, em cada tentativa'),
                 _benefit(theme, Icons.fitness_center,
-                    'Modo desafio para quem quer precisão nativa'),
+                    'Modo precisão para quem quer critério mais exigente'),
                 _benefit(theme, Icons.trending_up,
                     'Progresso em minutos reais de fala aprovada'),
                 const SizedBox(height: 24),
@@ -78,7 +78,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'acesso vitalício à Fase 1',
+                      'acesso vitalício à Trilha 1',
                       style: theme.textTheme.bodySmall,
                     ),
                     const SizedBox(height: 12),

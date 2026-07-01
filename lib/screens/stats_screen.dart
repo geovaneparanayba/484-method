@@ -132,6 +132,9 @@ class _Body extends StatelessWidget {
     final azureCostPerUser = (stats['azure_cost_per_user_usd'] as num?)?.toDouble() ?? 0;
     final acqFunnel        = (stats['acquisition_funnel'] as Map?)?.cast<String, dynamic>() ?? {};
     final sourceBreakdown  = (stats['source_breakdown'] as Map?)?.cast<String, dynamic>() ?? {};
+    final phase0           = (stats['phase0_activation'] as Map?)?.cast<String, dynamic>() ?? {};
+    final ahaBreakdown     = (stats['aha_breakdown'] as Map?)?.cast<String, dynamic>() ?? {};
+    final abandonBreakdown = (stats['abandon_breakdown'] as Map?)?.cast<String, dynamic>() ?? {};
 
     // "15.4% (n=39)" ou "— (n=0)" quando o cohort é pequeno/vazio.
     String fmtRet(String key) {
@@ -172,6 +175,31 @@ class _Body extends StatelessWidget {
               'Ativação (concluiu ≥1 lição / iniciou ≥1)',
               '${(activation['pct'] as num?)?.toStringAsFixed(1) ?? '0'}%  '
               '(${(activation['activated'] as num?)?.toInt() ?? 0}/${(activation['started'] as num?)?.toInt() ?? 0})'),
+
+          // ── Fase 0 — funil de ativação (eventos first_*) ──────────────
+          const SizedBox(height: 24),
+          _section('Fase 0 — funil de ativação (usuários únicos)'),
+          _row(theme, Icons.hearing, '1 · Ouviu', '${(phase0['listen'] as num?)?.toInt() ?? 0}'),
+          _row(theme, Icons.mic_none, '2 · Gravou', '${(phase0['recording'] as num?)?.toInt() ?? 0}'),
+          _row(theme, Icons.feedback_outlined, '3 · Viu feedback', '${(phase0['feedback'] as num?)?.toInt() ?? 0}'),
+          _row(theme, Icons.replay, '4 · Regravou', '${(phase0['retry'] as num?)?.toInt() ?? 0}'),
+          _row(theme, Icons.compare_arrows, '5 · Viu antes/depois', '${(phase0['before_after'] as num?)?.toInt() ?? 0}'),
+          _row(theme, Icons.verified_outlined, 'activation_completed',
+              '${(phase0['completed'] as num?)?.toInt() ?? 0} '
+              '(${(phase0['completed_pct'] as num?)?.toStringAsFixed(1) ?? '0'}%)'),
+          _row(theme, Icons.timer_outlined, '1º minuto aprovado', '${(phase0['approved_minute'] as num?)?.toInt() ?? 0}'),
+          if (ahaBreakdown.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _section('Sentiu melhora? (Momento Uau)'),
+            for (final e in ahaBreakdown.entries)
+              _row(theme, Icons.psychology_outlined, e.key, '${(e.value as num?)?.toInt() ?? 0}'),
+          ],
+          if (abandonBreakdown.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _section('Motivos de abandono'),
+            for (final e in abandonBreakdown.entries)
+              _row(theme, Icons.exit_to_app, e.key, '${(e.value as num?)?.toInt() ?? 0}'),
+          ],
 
           // ── Crescimento: novos usuários por dia ───────────────────────
           if (newUsers.isNotEmpty) ...[

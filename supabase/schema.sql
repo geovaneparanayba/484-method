@@ -363,3 +363,45 @@ end;
 $function$;
 revoke all on function public.consume_feedback_quota(int) from public;
 grant execute on function public.consume_feedback_quota(int) to authenticated, anon;
+
+-- ── Fase 0: ativação no painel (2026-06-28, migração phase0_activation_in_dev_stats)
+-- Pra não editar o corpo de ~13KB de get_dev_stats, a função grande foi
+-- RENOMEADA para get_dev_stats_base (corpo intocado, doc acima ainda descreve
+-- o corpo) e um wrapper get_dev_stats() passou a MESCLAR os agregados de
+-- ativação. A Edge Function `dev-stats` segue chamando rpc('get_dev_stats').
+--   alter function public.get_dev_stats() rename to get_dev_stats_base;
+create or replace function public.get_phase0_activation()
+returns json language sql stable security definer set search_path = public
+as $function$
+  select json_build_object(
+    'phase0_activation', json_build_object(
+      'listen',          (select count(distinct user_id) from events where event = 'first_listen_completed'),
+      'recording',       (select count(distinct user_id) from events where event = 'first_recording_completed'),
+      'feedback',        (select count(distinct user_id) from events where event = 'first_feedback_seen'),
+      'retry',           (select count(distinct user_id) from events where event = 'first_retry_completed'),
+      'before_after',    (select count(distinct user_id) from events where event = 'first_before_after_seen'),
+      'approved_minute', (select count(distinct user_id) from events where event = 'first_approved_minute_earned'),
+      'completed',       (select count(distinct user_id) from events where event = 'first_before_after_seen'),
+      'completed_pct',   (select coalesce(round(100.0 *
+                            (select count(distinct user_id) from events where event = 'first_before_after_seen')
+                            / nullif((select count(distinct user_id) from events where event = 'first_listen_completed'), 0), 1), 0))
+    ),
+    'aha_breakdown', (select coalesce(json_object_agg(ans, n), '{}'::json)
+      from (select props->>'answer' as ans, count(*) as n from events
+            where event = 'aha_question_answered' and props->>'answer' is not null
+            group by props->>'answer') t),
+    'abandon_breakdown', (select coalesce(json_object_agg(rsn, n), '{}'::json)
+      from (select props->>'reason' as rsn, count(*) as n from events
+            where event = 'abandon_reason' and props->>'reason' is not null
+            group by props->>'reason') t)
+  );
+$function$;
+create or replace function public.get_dev_stats()
+returns json language sql stable security definer set search_path = public
+as $function$
+  select (public.get_dev_stats_base()::jsonb || public.get_phase0_activation()::jsonb)::json;
+$function$;
+revoke all on function public.get_phase0_activation() from public;
+revoke all on function public.get_dev_stats() from public;
+grant execute on function public.get_phase0_activation() to service_role;
+grant execute on function public.get_dev_stats() to service_role;

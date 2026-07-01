@@ -80,6 +80,8 @@ class _LessonScreenState extends State<LessonScreen>
 
   /// Tempo da regravação final quando aprovada — exibido no antes/depois.
   Duration? _lastApprovedDuration;
+  /// Duração do áudio enviado na regravação final (microcopy de conclusão).
+  Duration? _lastAudioDuration;
   // "Momento Uau": esconde a pergunta de percepção quando já respondida.
   late bool _ahaAnswered = widget.store?.hasAnsweredAha ?? true;
 
@@ -224,6 +226,7 @@ class _LessonScreenState extends State<LessonScreen>
           _firstAccuracy = result.accuracy;
           _step = _Step.feedbackFirst;
         } else if (_step == _Step.livroAberto) {
+          _lastAudioDuration = audio.duration;
           if (approved) {
             _approved += audio.duration;
             _lastApprovedDuration = audio.duration;
@@ -406,13 +409,6 @@ class _LessonScreenState extends State<LessonScreen>
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(children: [
-          Text(
-            'Você não apenas completou um exercício. Você melhorou uma '
-            'tentativa real de fala.',
-            style: theme.textTheme.titleMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -489,13 +485,106 @@ class _LessonScreenState extends State<LessonScreen>
       );
 
   void _answerAha(String answer) {
-    widget.analytics?.log('aha_question_answered', {
-      'lesson': widget.lesson.id,
-      'item': _item.text,
+    final before = _firstAccuracy?.round();
+    final after = _result?.accuracy.round();
+    widget.analytics?.log('aha_moment_answered', {
       'answer': answer,
+      'lessonId': widget.lesson.id,
+      'item': _item.text,
+      'scoreBefore': before,
+      'scoreAfter': after,
+      'delta': (before != null && after != null) ? after - before : null,
+      'approvedSeconds': _lastApprovedDuration?.inSeconds ?? 0,
+      'challengeModeEnabled': widget.rigorous,
     });
     widget.store?.setAhaAnswered();
     setState(() => _ahaAnswered = true);
+  }
+
+  /// Linhas explicativas do resultado (#1): normal / revisão / precisão.
+  Widget _criteriaLines(ThemeData theme, bool approvedNormal) {
+    final st = theme.textTheme.bodySmall
+        ?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    return Column(children: [
+      Text('Critério normal: ${approvedNormal ? "aprovado" : "em revisão"}',
+          style: st),
+      Text(
+          'Revisão futura: ${approvedNormal ? "não necessária" : "necessária"}',
+          style: st),
+      Text('Modo precisão: opcional', style: st),
+    ]);
+  }
+
+  /// Bloco expansível "Por que este resultado?" (#2): critérios com checkmarks.
+  Widget _criteriaExpansion(ThemeData theme, PronunciationResult r,
+      bool approvedNormal, bool approvedChallenge) {
+    final l = widget.lesson;
+    Widget line(bool ok, String label) => Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Text('${ok ? "✓" : "•"} $label',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                    color: ok
+                        ? Colors.green.shade700
+                        : theme.colorScheme.secondary)),
+          ),
+        );
+    return Theme(
+      data: theme.copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(bottom: 8),
+        title: Text('Por que este resultado?',
+            style: theme.textTheme.bodyMedium
+                ?.copyWith(fontWeight: FontWeight.w600)),
+        children: [
+          line(r.accuracy >= l.approvalThreshold,
+              'Clareza geral: ${r.accuracy.round()}/100'),
+          if (r.prosody != null)
+            line(l.minProsody == null || r.prosody! >= l.minProsody!,
+                'Ritmo: ${r.prosody!.round()}/100'),
+          line(r.minPhoneme >= l.minPhoneme,
+              'Pronúncia (som mais fraco): ${r.minPhoneme.round()}/100'),
+          line(true, 'Completeness: ${r.completeness.round()}/100'),
+          line(true, 'Fluency: ${r.fluency.round()}/100'),
+          if (widget.rigorous)
+            line(approvedChallenge,
+                'Modo precisão: critério mais exigente de clareza, ritmo e pronúncia'),
+          if (!approvedNormal)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'Você melhorou muito, mas este som ainda apareceu instável. '
+                'Por isso, ele volta em revisão.',
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Microcopy de tempo aprovado vs áudio enviado (#11).
+  Widget _minutesMicrocopy(ThemeData theme) {
+    final st = theme.textTheme.bodySmall
+        ?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    return Column(children: [
+      if (_lastApprovedDuration != null)
+        Text(
+            'Tempo aprovado nesta tentativa: '
+            '${_lastApprovedDuration!.inSeconds}s',
+            style: st),
+      if (_lastAudioDuration != null)
+        Text('Áudio enviado: ${_lastAudioDuration!.inSeconds}s', style: st),
+      const SizedBox(height: 2),
+      Text(
+        'Só conta como aprovado o trecho em que sua fala bateu os critérios '
+        'do treino.',
+        style: st?.copyWith(fontStyle: FontStyle.italic),
+        textAlign: TextAlign.center,
+      ),
+    ]);
   }
 
   Widget _buildStep(ThemeData theme) {
@@ -612,14 +701,37 @@ class _LessonScreenState extends State<LessonScreen>
 
       case _Step.resultFinal:
         final r = _result!;
-        final approved =
-            widget.lesson.approves(r.accuracy, r.minPhoneme, r.prosody,
-                rigorous: widget.rigorous);
-        // Melhora da 1ª tentativa (de ouvido) para a final (com apoio):
-        // é o que o método chama de "transformar repetição em progresso".
-        final gain = _firstAccuracy == null
-            ? 0.0
-            : r.accuracy - _firstAccuracy!;
+        final approvedNormal = widget.lesson
+            .approves(r.accuracy, r.minPhoneme, r.prosody, rigorous: false);
+        final approvedChallenge = widget.lesson
+            .approves(r.accuracy, r.minPhoneme, r.prosody, rigorous: true);
+        final approved = widget.rigorous ? approvedChallenge : approvedNormal;
+        final gain =
+            _firstAccuracy == null ? 0.0 : r.accuracy - _firstAccuracy!;
+        // Três estados — nunca "não bateu o critério" sem explicar (#1).
+        final String stTitle, stMessage, secondaryLabel;
+        final Color stColor;
+        if (widget.rigorous && !approvedChallenge && approvedNormal) {
+          stTitle = 'Modo precisão ainda não aprovado';
+          stMessage = 'Você concluiu o treino normal, mas o critério do modo '
+              'precisão é mais exigente. Tente de novo se quiser buscar '
+              'precisão máxima.';
+          secondaryLabel = 'Tentar modo precisão de novo';
+          stColor = theme.colorScheme.tertiary;
+        } else if (approved) {
+          stTitle = 'Treino aprovado';
+          stMessage = 'Você não apenas completou um exercício. Você melhorou '
+              'uma tentativa real de fala.';
+          secondaryLabel = 'Gravar de novo';
+          stColor = Colors.green.shade700;
+        } else {
+          stTitle = 'Treino concluído com revisão';
+          stMessage = 'Sua fala melhorou nesta tentativa. Este ponto ainda vai '
+              'voltar para revisão amanhã, para fixar melhor.';
+          secondaryLabel = 'Gravar de novo para tentar dominar';
+          stColor = theme.colorScheme.secondary;
+        }
+        final nextLabel = _isLastItem ? 'Concluir treino' : 'Próxima palavra';
         return _centered([
           if (_firstAccuracy != null) ...[
             _beforeAfterCard(theme, r, gain, approved),
@@ -631,46 +743,35 @@ class _LessonScreenState extends State<LessonScreen>
           // Mapa de sílabas colorido: a escrita já foi liberada no Livro
           // Aberto, então mostrar os grafemas aqui não fere o som-first.
           _SyllableMap(result: r),
-          const SizedBox(height: 12),
-          Text(
-            approved
-                ? '✅ Aprovada! Esse tempo conta para as suas 484 horas.'
-                : 'Ainda não bateu o critério — mas você concluiu, '
-                    'e amanhã ela aparece de novo.',
-            style: theme.textTheme.bodyLarge,
-            textAlign: TextAlign.center,
-          ),
+          const SizedBox(height: 16),
+          Text(stTitle,
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(color: stColor, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center),
+          const SizedBox(height: 6),
+          Text(stMessage,
+              style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
+          const SizedBox(height: 10),
+          _criteriaLines(theme, approvedNormal),
+          const SizedBox(height: 6),
+          _criteriaExpansion(theme, r, approvedNormal, approvedChallenge),
+          if (_lastApprovedDuration != null || _lastAudioDuration != null) ...[
+            const SizedBox(height: 10),
+            _minutesMicrocopy(theme),
+          ],
           if (!_ahaAnswered) ...[
             const SizedBox(height: 16),
             _ahaQuestion(theme),
           ],
           const SizedBox(height: 24),
-          // Passo 8: regravar é sempre possível, sem prender. Aprovou → seguir
-          // é o destaque (regravar fica discreto, pra fixar). Reprovou →
-          // regravar é o destaque (seguir continua disponível).
-          if (approved) ...[
-            FilledButton(
-              onPressed: _nextItem,
-              child:
-                  Text(_isLastItem ? 'Concluir treino' : 'Próxima palavra'),
-            ),
-            TextButton.icon(
-              onPressed: _retryFinal,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Gravar de novo pra fixar'),
-            ),
-          ] else ...[
-            FilledButton.icon(
-              onPressed: _retryFinal,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Gravar de novo'),
-            ),
-            TextButton(
-              onPressed: _nextItem,
-              child:
-                  Text(_isLastItem ? 'Concluir treino' : 'Próxima palavra'),
-            ),
-          ],
+          // CTA (#15): seguir é sempre o principal; regravar é o secundário,
+          // com rótulo conforme o estado.
+          FilledButton(onPressed: _nextItem, child: Text(nextLabel)),
+          TextButton.icon(
+            onPressed: _retryFinal,
+            icon: const Icon(Icons.refresh),
+            label: Text(secondaryLabel),
+          ),
         ]);
 
       case _Step.finished:

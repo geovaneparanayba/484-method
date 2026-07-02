@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'backend.dart';
+import 'pricing.dart';
 
 /// Persistência local do progresso (web: localStorage; mobile: prefs), com
 /// espelhamento opcional no Supabase ([Backend]).
@@ -19,6 +22,7 @@ class ProgressStore {
   static const _kLastPracticeDay = 'last_practice_day';
   static const _kCompletedLessons = 'completed_lessons';
   static const _kVoiceConsentAt = 'voice_consent_at';
+  static const _kVoiceStorageConsentAt = 'voice_storage_consent_at';
   static const _kRigorousMode = 'rigorous_mode';
   static const _kThemeMode = 'theme_mode';
   static const _kActivationSteps = 'activation_steps';
@@ -27,6 +31,14 @@ class ProgressStore {
   static const _kItemIndexPrefix = 'lesson_item_index_';
   static const _kApprovedTodaySeconds = 'approved_seconds_today';
   static const _kApprovedTodayDate = 'approved_seconds_today_date';
+  static const _kDailyChallengeLessonId = 'daily_challenge_lesson_id';
+  static const _kDailyChallengeDate = 'daily_challenge_date';
+  static const _kDailyChallengeCompleted = 'daily_challenge_completed';
+  static const _kPriceBucket = 'price_bucket';
+  static const _kFounderEmailLeft = 'founder_email_left';
+  static const _kCohortStart = 'cohort_start_date';
+  static const _kBaselineConfidence = 'cohort_baseline_confidence';
+  static const _kFinalConfidence = 'cohort_final_confidence';
 
   /// Meta do produto: 484 horas de prática aprovada.
   static const goalSeconds = 484 * 3600;
@@ -128,6 +140,17 @@ class ProgressStore {
     backend?.pushProgress(_snapshot());
   }
 
+  /// LGPD: consentimento AMPLIADO — guardar a gravação (não só processar e
+  /// descartar, como no loop de lição). Base para o áudio de baseline/final do
+  /// desafio de 21 dias ficar salvo no Storage pro antes/depois com rating
+  /// cego. Distinto de [hasVoiceConsent] de propósito: reter voz é uma base
+  /// legal diferente de processá-la na hora.
+  bool get hasVoiceStorageConsent =>
+      _prefs.getString(_kVoiceStorageConsentAt) != null;
+
+  Future<void> grantVoiceStorageConsent() => _prefs.setString(
+      _kVoiceStorageConsentAt, DateTime.now().toIso8601String());
+
   /// Modo desafio: aprovação exige pronúncia próxima da nativa. Default off
   /// (Fase 1 é confiança primeiro).
   bool get rigorousMode => _prefs.getBool(_kRigorousMode) ?? false;
@@ -173,6 +196,97 @@ class ProgressStore {
       (_prefs.getStringList(_kCompletedLessons) ?? const [])
           .contains(lessonId);
 
+  /// Desafio de hoje: uma lição sorteada por dia (quem sorteia é a home, que
+  /// conhece paywall e progressão). Null se o sorteio salvo não é de hoje.
+  /// Só local, como itemIndex — é conveniência diária de UX, não a métrica
+  /// norte; some sozinho ao virar o dia.
+  String? get dailyChallengeLessonId {
+    if (_prefs.getString(_kDailyChallengeDate) != _ymd(DateTime.now())) {
+      return null;
+    }
+    return _prefs.getString(_kDailyChallengeLessonId);
+  }
+
+  bool get dailyChallengeCompleted =>
+      dailyChallengeLessonId != null &&
+      (_prefs.getBool(_kDailyChallengeCompleted) ?? false);
+
+  Future<void> setDailyChallenge(String lessonId) async {
+    await _prefs.setString(_kDailyChallengeLessonId, lessonId);
+    await _prefs.setString(_kDailyChallengeDate, _ymd(DateTime.now()));
+    await _prefs.setBool(_kDailyChallengeCompleted, false);
+  }
+
+  /// Variante de preço deste usuário no teste de willingness-to-pay. ESTÁVEL:
+  /// a mesma pessoa sempre vê o mesmo preço — senão a conversão por preço vira
+  /// ruído. Sorteia no 1º acesso ao paywall e persiste. Só local (estado de
+  /// experimento, não a métrica norte); chamar FORA do build (tem efeito
+  /// colateral de persistir o sorteio).
+  PriceVariant assignedPriceVariant() {
+    final saved = _prefs.getString(_kPriceBucket);
+    for (final v in kPriceVariants) {
+      if (v.bucket == saved) return v;
+    }
+    final picked = kPriceVariants[Random().nextInt(kPriceVariants.length)];
+    _prefs.setString(_kPriceBucket, picked.bucket);
+    return picked;
+  }
+
+  /// Já deixou o e-mail na lista de Fundadores (fake door do teste de WTP)?
+  /// Usado pra parar de oferecer depois que a pessoa converteu.
+  bool get hasLeftFounderEmail => _prefs.getBool(_kFounderEmailLeft) ?? false;
+
+  Future<void> setLeftFounderEmail() =>
+      _prefs.setBool(_kFounderEmailLeft, true);
+
+  // --- Desafio de 21 dias (instrumento de validação do beta) ---
+  // Estado só local, como dailyChallenge/priceBucket: o que vira métrica
+  // (confiança inicial/final, antes/depois) sai como EVENTO de analytics
+  // (events.props, jsonb flexível) — não entra no snapshot do progresso, pra
+  // não exigir migração de coluna nem arriscar quebrar o upsert do progresso.
+
+  /// Quantos dias dura o desafio. A gravação/pesquisa final e o antes/depois
+  /// liberam a partir do último dia.
+  static const cohortLength = 21;
+
+  String? get cohortStartDate => _prefs.getString(_kCohortStart);
+
+  bool get cohortStarted => cohortStartDate != null;
+
+  /// Dia atual do desafio, 1-based (o dia em que começou é o dia 1). 0 se
+  /// ainda não começou. Nunca abaixo de 1 depois de começar (protege contra
+  /// relógio do aparelho voltando no tempo).
+  int get cohortDay {
+    final start = cohortStartDate;
+    if (start == null) return 0;
+    final startDate = DateTime.tryParse(start);
+    if (startDate == null) return 0;
+    final today = DateTime.parse(_ymd(DateTime.now()));
+    final diff = today.difference(startDate).inDays;
+    return diff < 0 ? 1 : diff + 1;
+  }
+
+  /// Já passou o desafio inteiro → libera a etapa final (pesquisa de confiança
+  /// final + antes/depois).
+  bool get cohortFinalUnlocked => cohortStarted && cohortDay >= cohortLength;
+
+  /// Autoavaliação de confiança pra falar inglês (1–5), no começo e no fim.
+  /// É o par SUBJETIVO do antes/depois (o objetivo — gravação com nota — é a
+  /// próxima fatia, precisa de gravação longa + storage).
+  int? get baselineConfidence => _prefs.getInt(_kBaselineConfidence);
+  int? get finalConfidence => _prefs.getInt(_kFinalConfidence);
+  bool get cohortBaselineDone => baselineConfidence != null;
+  bool get cohortFinalDone => finalConfidence != null;
+
+  /// Começa o desafio hoje e grava a confiança inicial.
+  Future<void> startCohort(int baselineConfidence) async {
+    await _prefs.setString(_kCohortStart, _ymd(DateTime.now()));
+    await _prefs.setInt(_kBaselineConfidence, baselineConfidence);
+  }
+
+  Future<void> setFinalConfidence(int value) =>
+      _prefs.setInt(_kFinalConfidence, value);
+
   /// Em que item da lição a pessoa estava (pra retomar, não recomeçar do
   /// zero ao reabrir). Só local — é conveniência de UX, não a métrica norte,
   /// não precisa espelhar no Supabase.
@@ -186,6 +300,11 @@ class ProgressStore {
       _prefs.remove('$_kItemIndexPrefix$lessonId');
 
   Future<void> markLessonCompleted(String lessonId) async {
+    // Antes do early-return: o desafio pode ser uma lição já concluída
+    // (revisão, quando a trilha liberada está toda feita).
+    if (lessonId == dailyChallengeLessonId && !dailyChallengeCompleted) {
+      await _prefs.setBool(_kDailyChallengeCompleted, true);
+    }
     final done = _prefs.getStringList(_kCompletedLessons) ?? [];
     if (done.contains(lessonId)) return;
     await _prefs.setStringList(_kCompletedLessons, [...done, lessonId]);

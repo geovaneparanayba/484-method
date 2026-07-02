@@ -35,7 +35,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 Text('484 Method — Privacidade',
                     style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 4),
-                Text('Última atualização: junho de 2026',
+                Text('Última atualização: julho de 2026',
                     style: theme.textTheme.bodySmall),
                 const SizedBox(height: 24),
                 section(
@@ -49,11 +49,21 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 ),
                 section(
                   'Como usamos sua voz',
-                  'O áudio é enviado ao serviço de análise de pronúncia da '
-                      'Microsoft Azure apenas para gerar sua nota e o feedback. '
-                      'Os scores podem ser enviados à Anthropic (Claude) para '
-                      'escrever o feedback em português. O áudio NÃO é usado '
-                      'para treinar modelos de IA.',
+                  'Nas lições, o áudio é enviado ao serviço de análise de '
+                      'pronúncia da Microsoft Azure apenas para gerar sua nota '
+                      'e o feedback, e NÃO é guardado. Os scores podem ser '
+                      'enviados à Anthropic (Claude) para escrever o feedback '
+                      'em português. O áudio NÃO é usado para treinar modelos '
+                      'de IA.',
+                ),
+                section(
+                  'Gravações do Desafio de 21 dias',
+                  'Se você entrar no Desafio de 21 dias e autorizar, GUARDAMOS '
+                      'duas gravações suas (no início e no fim) para montar seu '
+                      'antes/depois e para revisão da equipe do 484. Ficam num '
+                      'espaço privado, ligado ao seu identificador anônimo, e '
+                      'você pode apagá-las quando quiser. É opcional: sem '
+                      'autorizar, o desafio segue só com sua autoavaliação.',
                 ),
                 section(
                   'Onde os dados ficam',
@@ -70,8 +80,9 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 section(
                   'Exclusão dos seus dados',
                   'A qualquer momento, em "Apagar meus dados" no menu, você '
-                      'remove progresso, streak, lições e consentimento — tanto '
-                      'do aparelho quanto da nossa base. A ação é definitiva.',
+                      'remove progresso, streak, lições, consentimento e as '
+                      'gravações do desafio — tanto do aparelho quanto da nossa '
+                      'base. A ação é definitiva.',
                 ),
                 section(
                   'Contato',

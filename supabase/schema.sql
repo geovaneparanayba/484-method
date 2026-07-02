@@ -421,3 +421,32 @@ create policy "app_config: leitura pública" on public.app_config
 insert into public.app_config (key, value)
   values ('maintenance', jsonb_build_object('on', false))
   on conflict (key) do nothing;
+
+-- ── Gravações do Desafio de 21 dias (2026-07-02, migração ────────────────────
+-- cohort_recordings_storage). Fala aberta de baseline (dia 0) e final (dia 21)
+-- pro antes/depois OBJETIVO com rating cego humano — o Azure não pontua fala
+-- aberta sem texto de referência. Guardar áudio (não só processar) é base LGPD
+-- nova: exige consentimento ampliado no cliente (hasVoiceStorageConsent) e é
+-- apagável pelo próprio usuário. Áudio no Storage; metadados aqui.
+-- Bucket privado 'cohort-recordings' (teto 5 MB, mime audio/wav) criado na
+-- mesma migração via storage.buckets; policies em storage.objects restringem
+-- cada usuário à própria pasta {uid}/. Rating cego usa service_role.
+create table if not exists public.cohort_recordings (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  kind text not null check (kind in ('baseline','final')),
+  storage_path text not null,
+  duration_ms integer,
+  cohort_day integer,
+  created_at timestamptz not null default now()
+);
+alter table public.cohort_recordings enable row level security;
+create policy "own cohort_recordings: select" on public.cohort_recordings
+  for select using (auth.uid() = user_id);
+create policy "own cohort_recordings: insert" on public.cohort_recordings
+  for insert with check (auth.uid() = user_id);
+-- LGPD: idem progress/events — exclusão das próprias gravações pelo app.
+create policy "own cohort_recordings: delete" on public.cohort_recordings
+  for delete using (auth.uid() = user_id);
+create index if not exists cohort_recordings_user_idx
+  on public.cohort_recordings (user_id, kind);

@@ -29,6 +29,8 @@ Métrica norte do produto: **minutos de prática oral APROVADA**, nunca tempo de
 - ✅ Feedback gerado pela Claude API via Edge Function (fallback p/ mensagens
   fixas sem chave/rede) — ver "Regras de produto que viram código".
 - ✅ Dashboard com progresso em minutos aprovados (barra das 484h) + streak
+  + desafio do dia (lição sorteada por dia entre as liberadas; só local,
+  expira ao virar o dia — ver ProgressStore.dailyChallengeLessonId)
 - Threshold de aprovação CONFIGURÁVEL por lição (permissivo na Fase 1)
 - ✅ Onboarding com promessa + regra som-first + consentimento de gravação de voz
 - ✅ Analytics de eventos (conclusão, tentativas, regravação, retenção)
@@ -37,6 +39,42 @@ Métrica norte do produto: **minutos de prática oral APROVADA**, nunca tempo de
   as 25 lições estão grátis (`kFreeLessonCount`) até ter usuários reais e
   monetização ativa — falta a impl real com RevenueCat, bloqueada por conta
   Apple (ver Stack).
+- ✅ Desafio de 21 dias (instrumento de validação — mede OUTCOME, não só
+  comportamento): estado do cohort é local em `ProgressStore` (`cohortStartDate`,
+  `cohortDay` 1-based, `cohortFinalUnlocked` no dia ≥ 21, confiança
+  inicial/final 1–5) — não vai no snapshot do progresso (evita migração de
+  coluna); as métricas saem como eventos (`cohort_started`, `final_confidence`,
+  `before_after_review_completed`, `testimonial_submitted`) na tabela `events`
+  (props jsonb). UI: card por estágio na home + pesquisa de confiança
+  (`showConfidenceSurvey`) + `CohortReviewScreen` (antes/depois: delta de
+  confiança + minutos aprovados + lições + depoimento). O par OBJETIVO
+  (gravação de fala aberta baseline/final) está implementado (fatia 2):
+  `AudioRecorderService.longForm()` (60s, sem auto-stop por silêncio),
+  `CohortRecordingScreen` (prompts do memo, best-effort), upload pro bucket
+  privado `cohort-recordings` via `Backend.uploadCohortRecording` + metadados
+  em `public.cohort_recordings` (RLS por dono; migração
+  `cohort_recordings_storage`). Consentimento AMPLIADO próprio
+  (`ProgressStore.hasVoiceStorageConsent` — guardar áudio ≠ processar na hora);
+  `deleteRemoteData` apaga Storage+metadados em bloco próprio (não trava o
+  delete de progress/events). Política de privacidade atualizada. Rating cego
+  IN-APP: painel do dev (`stats_screen` → `CohortRatingScreen`) ouve as
+  gravações embaralhadas e às CEGAS (não revela baseline/final), dá nota 1–5 de
+  clareza e mostra o antes/depois agregado (média baseline vs final). URLs
+  assinadas e escrita das notas via Edge Function `dev-stats` (novas actions
+  `list_recordings`/`rate`, service role + gate de senha; deploy v6); notas em
+  `public.cohort_ratings` (migração `cohort_ratings`; RLS sem policy de cliente,
+  igual feedback_quota).
+- ✅ Teste de willingness-to-pay (fake door): a `PaywallScreen` é um teste de
+  preço A/B — cada usuário vê uma variante estável (`lib/services/pricing.dart`,
+  `ProgressStore.assignedPriceVariant`) e o funil inteiro vai pra `events` com
+  `price_bucket`/`amount_cents` (`paywall_viewed` → `paywall_subscribe_clicked`
+  → `paywall_email_captured` c/ e-mail). Hoje NÃO cobra: o CTA captura e-mail
+  (lista de Fundadores) pra provar intenção antes de construir cobrança. O Pix
+  entra em `PaywallScreen._startCheckout` (seam marcado; `url_launcher` já é
+  dep, não precisa de plugin novo). Gatilho: card não-bloqueante na home no
+  "momento uau" (`first_before_after_seen`), some quando a pessoa deixa o
+  e-mail — não gateia as lições grátis. Métrica que importa: conversão POR
+  preço (e-mail/viewed), segmentada por `price_bucket`, entre usuários ativos.
 
 ## Fora de escopo (NÃO implementar)
 - Fases 2–8, múltiplos sotaques, connected speech, pares mínimos, IPA

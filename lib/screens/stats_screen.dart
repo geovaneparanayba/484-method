@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/backend.dart';
+import 'cohort_rating_screen.dart';
 
 /// Painel de uso — apenas para o desenvolvedor (acessível via menu oculto).
 /// A senha digitada no diálogo de acesso é verificada pela Edge Function
@@ -180,6 +181,28 @@ class _StatsScreenState extends State<StatsScreen> {
                               secondary: Icon(maintenanceOn
                                   ? Icons.construction
                                   : Icons.check_circle_outline),
+                            ),
+                          ),
+                        ),
+                        // ── Rating cego das gravações do desafio de 21 dias ─
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                          child: Card(
+                            child: ListTile(
+                              leading: const Icon(Icons.graphic_eq),
+                              title: const Text('Rating cego de fala'),
+                              subtitle: const Text(
+                                  'Ouça baseline/final às cegas e compare o '
+                                  'antes/depois.'),
+                              trailing: const Icon(Icons.chevron_right),
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => CohortRatingScreen(
+                                    backend: widget.backend,
+                                    password: widget.password,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),

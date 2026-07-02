@@ -310,12 +310,17 @@ class _LessonScreenState extends State<LessonScreen>
     setState(() {
       if (_isLastItem) {
         _step = _Step.finished;
+        // Antes de marcar: markLessonCompleted também dá baixa no desafio.
+        final wasDailyChallenge =
+            widget.store?.dailyChallengeLessonId == widget.lesson.id &&
+                widget.store?.dailyChallengeCompleted == false;
         widget.store?.markLessonCompleted(widget.lesson.id);
         widget.store?.clearItemIndex(widget.lesson.id);
         widget.analytics?.log('lesson_completed', {
           'lesson': widget.lesson.id,
           'approved_seconds': _approved.inSeconds,
           'audio_sent_seconds': _audioSent.inSeconds,
+          'daily_challenge': wasDailyChallenge,
         });
       } else {
         _index++;

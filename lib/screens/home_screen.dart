@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../data/fase1.dart';
@@ -7,6 +9,8 @@ import '../services/entitlement_service.dart';
 import '../services/progress_store.dart';
 import '../services/pronunciation_assessor.dart';
 import '../services/backend.dart';
+import 'cohort_recording_screen.dart';
+import 'cohort_review_screen.dart';
 import 'lesson_screen.dart';
 import 'paywall_screen.dart';
 import 'privacy_policy_screen.dart';
@@ -58,6 +62,11 @@ class _HomeScreenState extends State<HomeScreen> {
   // muitos cadeados em sequência davam sensação de caminho longo e cansativo.
   bool _showAllLessons = false;
 
+  // Desafio do dia, resolvido fora do build (o sorteio tem efeito colateral de
+  // persistir no ProgressStore). Null = nenhuma lição elegível (não deve
+  // acontecer: a lição 1 está sempre liberada) ou ainda não resolvido.
+  Lesson? _challenge;
+
   // #5/#13 Missões: rótulos pras primeiras lições não-bônus (camada leve por
   // cima do currículo). Sem número fixo no texto — o índice da missão não é
   // o mesmo da lição (bônus não contam), então numerar as duas confundia
@@ -99,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _ensureDailyChallenge();
     // Conserto do funil: quem acabou de consentir entra direto na 1ª lição,
     // em vez de cair na dashboard vazia ("0 de 484h" assusta e não tem CTA).
     // Só no 1º acesso (progresso zero); initState roda 1x, sem repetir.
@@ -116,9 +126,9 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Apagar todos os seus dados?'),
         content: const Text(
-            'Progresso, streak, lições concluídas e o consentimento de '
-            'gravação serão apagados deste dispositivo e da nuvem. Essa '
-            'ação não pode ser desfeita.'),
+            'Progresso, streak, lições concluídas, o consentimento de '
+            'gravação e as gravações do desafio serão apagados deste '
+            'dispositivo e da nuvem. Essa ação não pode ser desfeita.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -136,30 +146,59 @@ class _HomeScreenState extends State<HomeScreen> {
     widget.onDataCleared?.call();
   }
 
-  /// Abre a oferta Beta Fundador. A compra real (RevenueCat) só existe no
-  /// mobile; aqui o CTA anuncia a disponibilidade, e o menu de dev libera o
-  /// acesso para teste na web.
-  void _openPaywall() {
-    Navigator.of(context).push(MaterialPageRoute(
+  /// Abre a oferta Beta Fundador (teste de willingness-to-pay). O paywall
+  /// cuida do preço testado, do funil e da captura de e-mail (fake door); o
+  /// pagamento real via Pix entra dentro dele depois. Ao voltar, atualiza a
+  /// home (o CTA de Fundador some se a pessoa deixou o e-mail).
+  Future<void> _openPaywall() async {
+    await Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => PaywallScreen(
+        store: widget.store,
         analytics: widget.analytics,
-        onSubscribe: () => showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Em breve'),
-            content: const Text(
-                'A assinatura Beta Fundador entra quando o app chegar à '
-                'App Store. Obrigado por querer fazer parte desde o começo!'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Entendi'),
+      ),
+    ));
+    if (mounted) setState(() {});
+  }
+
+  /// CTA da oferta Beta Fundador na dashboard. Aparece no "momento uau" (a
+  /// pessoa já viu seu antes/depois → sabe que funciona) e some quando ela
+  /// entra na lista de Fundadores. Não bloqueia nada: mede intenção sem
+  /// tirar as lições grátis de quem só quer praticar.
+  Widget _founderOfferCard(ThemeData theme) {
+    return Card(
+      color: theme.colorScheme.tertiaryContainer,
+      child: InkWell(
+        onTap: _openPaywall,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Icon(Icons.workspace_premium,
+                  size: 36, color: theme.colorScheme.tertiary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Seja um Fundador do 484',
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Garanta acesso vitalício e ajude a decidir o que vem '
+                      'depois da Trilha 1.',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
               ),
+              const Icon(Icons.chevron_right),
             ],
           ),
         ),
       ),
-    ));
+    );
   }
 
   void _openPrivacyPolicy() {
@@ -237,6 +276,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _toggleFounderAccess() async {
     await widget.entitlement
         .setFounderAccess(!widget.entitlement.hasFounderAccess);
+    // Acesso mudou: o desafio salvo pode ter virado paywall (ou liberado).
+    _ensureDailyChallenge();
     if (mounted) setState(() {});
   }
 
@@ -267,6 +308,293 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
     return confirmed ?? false;
+  }
+
+  bool _isPaywalled(int i) =>
+      i >= kFreeLessonCount && !widget.entitlement.hasFounderAccess;
+
+  /// O pré-requisito é a lição anterior NÃO bônus — lições bônus nunca
+  /// bloqueiam (nem precisam de) progressão.
+  bool _isProgressionUnlocked(int i) {
+    int prereq = i - 1;
+    while (prereq >= 0 && fase1Lessons[prereq].bonus) {
+      prereq--;
+    }
+    return prereq < 0 ||
+        widget.store.isLessonCompleted(fase1Lessons[prereq].id);
+  }
+
+  /// Resolve o desafio de hoje em [_challenge]. Tem efeito colateral (persiste
+  /// o sorteio), então roda FORA do build — no initState e depois de eventos
+  /// que mudam a elegibilidade (concluir lição, alternar acesso). Reaproveita
+  /// o sorteio salvo do dia se ele ainda for elegível; re-sorteia se o acesso
+  /// foi perdido (virou paywall) ou o id não existe mais (currículo mudou).
+  void _ensureDailyChallenge() {
+    final savedId = widget.store.dailyChallengeLessonId;
+    if (savedId != null) {
+      final idx = fase1Lessons.indexWhere((l) => l.id == savedId);
+      if (idx >= 0 && !_isPaywalled(idx) && _isProgressionUnlocked(idx)) {
+        _challenge = fase1Lessons[idx];
+        return;
+      }
+    }
+    _challenge = _pickDailyChallenge();
+  }
+
+  /// Sorteia uma lição do dia entre as liberadas e ainda não concluídas — dá
+  /// visibilidade às bônus (que a "próxima melhor ação" nunca aponta) e vira
+  /// revisão quando a trilha liberada está toda feita. Persiste o sorteio
+  /// (não troca a cada rebuild; expira sozinho ao virar o dia).
+  Lesson? _pickDailyChallenge() {
+    final unlocked = [
+      for (final (i, l) in fase1Lessons.indexed)
+        if (!_isPaywalled(i) && _isProgressionUnlocked(i)) l,
+    ];
+    if (unlocked.isEmpty) return null;
+    final incomplete = [
+      for (final l in unlocked)
+        if (!widget.store.isLessonCompleted(l.id)) l,
+    ];
+    final pool = incomplete.isNotEmpty ? incomplete : unlocked;
+    final picked = pool[Random().nextInt(pool.length)];
+    widget.store.setDailyChallenge(picked.id);
+    return picked;
+  }
+
+  Widget _dailyChallengeCard(ThemeData theme, Lesson lesson) {
+    final done = widget.store.dailyChallengeCompleted;
+    final isReview = widget.store.isLessonCompleted(lesson.id) && !done;
+    return Card(
+      child: ListTile(
+        leading: Icon(
+          done ? Icons.check_circle : Icons.local_fire_department,
+          color: theme.colorScheme.secondary,
+        ),
+        title: const Text('Desafio de hoje'),
+        subtitle: Text(done
+            ? '${lesson.title} — feito! Amanhã tem outro.'
+            : isReview
+                ? '${lesson.title} · revisão'
+                : lesson.title),
+        trailing: done ? null : const Icon(Icons.chevron_right),
+        onTap: done ? null : () => _openLesson(lesson),
+      ),
+    );
+  }
+
+  /// Desafio de 21 dias (instrumento de validação do beta): mede outcome, não
+  /// só comportamento — confiança inicial vs. final + o antes/depois. O card
+  /// muda conforme o estágio: entrar → em andamento → fechar → concluído.
+  Widget _cohortCard(ThemeData theme) {
+    final store = widget.store;
+
+    if (!store.cohortStarted) {
+      return _cohortCta(
+        theme,
+        color: theme.colorScheme.primaryContainer,
+        accent: theme.colorScheme.primary,
+        icon: Icons.flag,
+        title: 'Desafio de 21 dias',
+        subtitle:
+            'Treine o ouvido e a boca todo dia. No fim, veja seu antes e depois.',
+        onTap: _startCohort,
+      );
+    }
+
+    if (store.cohortFinalDone) {
+      return Card(
+        child: ListTile(
+          leading:
+              Icon(Icons.emoji_events, color: theme.colorScheme.secondary),
+          title: const Text('Desafio de 21 dias concluído'),
+          subtitle: const Text('Ver seu antes e depois'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: _openReview,
+        ),
+      );
+    }
+
+    if (store.cohortFinalUnlocked) {
+      return _cohortCta(
+        theme,
+        color: theme.colorScheme.secondaryContainer,
+        accent: theme.colorScheme.secondary,
+        icon: Icons.emoji_events,
+        title: 'Você chegou ao dia ${store.cohortDay}!',
+        subtitle: 'Feche o desafio e veja seu antes e depois.',
+        onTap: _finishCohort,
+      );
+    }
+
+    final day = store.cohortDay.clamp(1, ProgressStore.cohortLength);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+                'Desafio de 21 dias · Dia $day de ${ProgressStore.cohortLength}',
+                style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: day / ProgressStore.cohortLength,
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(4),
+              color: theme.colorScheme.primary,
+              backgroundColor:
+                  theme.colorScheme.primary.withValues(alpha: 0.15),
+            ),
+            const SizedBox(height: 8),
+            Text('Pratique um pouco hoje pra manter o ritmo.',
+                style: theme.textTheme.bodyMedium),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cohortCta(
+    ThemeData theme, {
+    required Color color,
+    required Color accent,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      color: color,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Icon(icon, size: 36, color: accent),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(subtitle, style: theme.textTheme.bodyMedium),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Guardar gravações é uma base LGPD diferente de processá-las na hora (loop
+  /// de lição), então pede consentimento próprio. Só faz sentido com backend
+  /// (o áudio vai pro Storage); em local-only o desafio roda só com confiança.
+  Future<bool> _confirmVoiceStorageConsent() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Guardar suas gravações do desafio?'),
+        content: const Text(
+            'Pra você comparar seu antes e depois, o 484 vai GUARDAR duas '
+            'gravações suas (hoje e no fim dos 21 dias) — não só analisar na '
+            'hora, como nas lições. Ficam num espaço privado; você pode apagar '
+            'tudo quando quiser em "Apagar meus dados". Sem isso, o desafio '
+            'segue só com a sua autoavaliação.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Não, obrigado'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Pode guardar'),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+
+  Future<void> _recordCohortSpeech(String kind) async {
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => CohortRecordingScreen(
+        kind: kind,
+        store: widget.store,
+        backend: Backend.instance,
+        analytics: widget.analytics,
+      ),
+    ));
+  }
+
+  Future<void> _startCohort() async {
+    // O áudio só pode ser guardado com backend; sem ele, desafio de confiança.
+    final canRecord = Backend.instance != null;
+    if (canRecord && !widget.store.hasVoiceStorageConsent) {
+      if (await _confirmVoiceStorageConsent()) {
+        await widget.store.grantVoiceStorageConsent();
+      }
+    }
+    if (!mounted) return;
+    final score = await showConfidenceSurvey(
+      context,
+      title: 'Desafio de 21 dias',
+      question: 'Antes de começar: como você se sente falando inglês hoje?',
+    );
+    if (score == null) return;
+    await widget.store.startCohort(score);
+    widget.analytics?.log('cohort_started', {
+      'baseline_confidence': score,
+      'audio_consent': widget.store.hasVoiceStorageConsent,
+    });
+    if (!mounted) return;
+    // Gravação de baseline (best-effort): registra a fala de hoje pro depois.
+    if (canRecord && widget.store.hasVoiceStorageConsent) {
+      await _recordCohortSpeech('baseline');
+    }
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _finishCohort() async {
+    final score = await showConfidenceSurvey(
+      context,
+      title: 'Você chegou ao fim do desafio!',
+      question: 'Agora, como você se sente falando inglês?',
+    );
+    if (score == null) return;
+    await widget.store.setFinalConfidence(score);
+    widget.analytics?.log('final_confidence', {'final_confidence': score});
+    if (!mounted) return;
+    // Gravação final (best-effort) antes do antes/depois, se houve consentimento.
+    if (Backend.instance != null && widget.store.hasVoiceStorageConsent) {
+      await _recordCohortSpeech('final');
+    }
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => CohortReviewScreen(
+        store: widget.store,
+        analytics: widget.analytics,
+      ),
+    ));
+    if (mounted) setState(() {});
+  }
+
+  void _openReview() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => CohortReviewScreen(
+        store: widget.store,
+        analytics: widget.analytics,
+      ),
+    )).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   /// A "próxima melhor ação": a 1ª lição não-bônus ainda não concluída (o
@@ -410,40 +738,72 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Só faz sentido mostrar quando já dá pra recomendar (≥30min aprovados) —
+  /// abaixo disso o card virava um aviso "pode ser difícil demais" e só
+  /// competia com a ação principal do iniciante. Ver `_showPrecision`.
+  static const _precisionBaseSeconds = 30 * 60;
+
   /// #10: "Modo precisão" (ex-"Modo desafio") — copy menos intimidante, sem
-  /// prometer "pronúncia nativa"; avisa quem ainda está construindo base.
+  /// prometer "pronúncia nativa". Aparece só depois da base de 30min.
   Widget _precisionModeCard(ThemeData theme) {
-    final hasEnoughBase =
-        widget.store.totalApproved.inSeconds >= 30 * 60;
     return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SwitchListTile(
-            value: widget.store.rigorousMode,
-            onChanged: (v) async {
-              if (v && !await _confirmEnableRigorous()) return;
-              await widget.store.setRigorousMode(v);
-              setState(() {});
-            },
-            title: const Text('Modo precisão'),
-            subtitle: const Text(
-                'Use quando quiser treinar com critério mais exigente de '
-                'clareza, ritmo e pronúncia. Recomendado depois dos '
-                'primeiros 30 minutos aprovados.'),
-            secondary: const Icon(Icons.fitness_center),
-          ),
-          if (!hasEnoughBase)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Text(
-                'Você ainda está construindo base. O modo precisão pode '
-                'ficar difícil demais no começo.',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
+      child: SwitchListTile(
+        value: widget.store.rigorousMode,
+        onChanged: (v) async {
+          if (v && !await _confirmEnableRigorous()) return;
+          await widget.store.setRigorousMode(v);
+          setState(() {});
+        },
+        title: const Text('Modo precisão'),
+        subtitle: const Text(
+            'Use quando quiser treinar com critério mais exigente de '
+            'clareza, ritmo e pronúncia. Recomendado depois dos '
+            'primeiros 30 minutos aprovados.'),
+        secondary: const Icon(Icons.fitness_center),
+      ),
+    );
+  }
+
+  /// #7 (mais distante da hierarquia): a jornada de 484h + streak. Fica abaixo
+  /// da meta de hoje e do primeiro marco; escondida no dia 0 (a barra "0 de
+  /// 484h" assusta e o streak ainda é 0 mesmo).
+  Widget _journeyCard(ThemeData theme) {
+    final total = widget.store.totalApproved;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Jornada 484h iniciada',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: widget.store.goalFraction,
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(4),
+              color: theme.colorScheme.secondary,
+              backgroundColor:
+                  theme.colorScheme.secondary.withValues(alpha: 0.15),
             ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              total.inSeconds > 0
+                  ? '${_format(total)} de treino aprovado no total'
+                  : 'Comece o primeiro treino hoje.',
+              style: theme.textTheme.bodySmall,
+            ),
+            if (widget.store.streakDays > 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                '🔥 ${widget.store.streakDays} '
+                '${widget.store.streakDays == 1 ? "dia" : "dias"} seguidos',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -461,16 +821,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     for (final (i, lesson) in fase1Lessons.indexed) {
       final completed = widget.store.isLessonCompleted(lesson.id);
-      final paywalled =
-          i >= kFreeLessonCount && !widget.entitlement.hasFounderAccess;
-      // O pré-requisito é a lição anterior NÃO bônus — lições bônus nunca
-      // bloqueiam (nem precisam de) progressão.
-      int prereq = i - 1;
-      while (prereq >= 0 && fase1Lessons[prereq].bonus) {
-        prereq--;
-      }
-      final progressionUnlocked = prereq < 0 ||
-          widget.store.isLessonCompleted(fase1Lessons[prereq].id);
+      final paywalled = _isPaywalled(i);
+      final progressionUnlocked = _isProgressionUnlocked(i);
       final unlocked = !paywalled && progressionUnlocked;
       final isCurrent = i == nextIndex;
 
@@ -631,7 +983,10 @@ class _HomeScreenState extends State<HomeScreen> {
         rigorous: widget.store.rigorousMode,
       ),
     ));
-    setState(() {}); // progresso pode ter mudado
+    // Progresso pode ter mudado: reavalia elegibilidade e refaz o sorteio se
+    // o dia virou enquanto a tela estava aberta.
+    _ensureDailyChallenge();
+    setState(() {});
   }
 
   @override
@@ -639,11 +994,30 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     final total = widget.store.totalApproved;
     final next = _nextLesson();
+    final challenge = _challenge;
     // #10: começou a praticar (gravou) mas não chegou ao antes/depois → perguntar.
     final askAbandon = !_abandonAnswered &&
         widget.store.hasDone('first_recording_completed') &&
         !widget.store.hasDone('first_before_after_seen') &&
         !widget.store.hasAskedAbandon;
+    // Oferta Beta Fundador: só depois do "momento uau" (viu o antes/depois) e
+    // enquanto a pessoa não entrou na lista de Fundadores.
+    final showFounderOffer = widget.store.hasDone('first_before_after_seen') &&
+        !widget.store.hasLeftFounderEmail;
+
+    // Priorização por estágio (evita a "parede de cards" no dia 0). No dia 0 a
+    // única coisa é a próxima ação + a trilha; medidores e ofertas secundárias
+    // entram à medida que a pessoa acumula prática real.
+    final isBrandNew = total == Duration.zero;
+    // Desafio de hoje: não repetir a lição que a "próxima melhor ação" já
+    // aponta (seria o mesmo card duas vezes), nem oferecer no dia 0.
+    final showChallenge =
+        !isBrandNew && challenge != null && challenge.id != next?.id;
+    // Convite do desafio de 21 dias só depois da 1ª prática; já iniciado,
+    // mostra sempre (é o frame ativo).
+    final showCohort = widget.store.cohortStarted || !isBrandNew;
+    final showPrecision =
+        total.inSeconds >= _precisionBaseSeconds; // só quando é recomendável
     return Scaffold(
       appBar: AppBar(
         title: const Text('484 Method'),
@@ -695,57 +1069,41 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 12),
               ],
               if (next != null) ...[
-                _nextBestActionCard(theme, next, total == Duration.zero),
+                _nextBestActionCard(theme, next, isBrandNew),
                 const SizedBox(height: 12),
               ],
-              // #7: meta de hoje (curta e tangível) antes do primeiro marco
-              // e da jornada de 484h — hierarquia do mais imediato pro mais
-              // distante, pra "1min aprovado" não parecer minúsculo demais.
-              _todayGoalCard(theme),
-              const SizedBox(height: 12),
-              if (!widget.store.reachedFirstMilestone) ...[
+              if (showCohort) ...[
+                _cohortCard(theme),
+                const SizedBox(height: 12),
+              ],
+              // #7: meta de hoje → primeiro marco → jornada 484h, do mais
+              // imediato pro mais distante. Escondidos no dia 0 (a próxima
+              // ação já carrega a promessa da meta de hoje).
+              if (!isBrandNew) ...[
+                _todayGoalCard(theme),
+                const SizedBox(height: 12),
+              ],
+              if (!isBrandNew && !widget.store.reachedFirstMilestone) ...[
                 _firstMilestoneCard(theme),
                 const SizedBox(height: 12),
               ],
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Jornada 484h iniciada',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant)),
-                      const SizedBox(height: 8),
-                      LinearProgressIndicator(
-                        value: widget.store.goalFraction,
-                        minHeight: 8,
-                        borderRadius: BorderRadius.circular(4),
-                        color: theme.colorScheme.secondary,
-                        backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.15),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        total.inSeconds > 0
-                            ? '${_format(total)} de treino aprovado no total'
-                            : 'Comece o primeiro treino hoje.',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      if (widget.store.streakDays > 0) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          '🔥 ${widget.store.streakDays} '
-                          '${widget.store.streakDays == 1 ? "dia" : "dias"} seguidos',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
+              if (showChallenge) ...[
+                _dailyChallengeCard(theme, challenge),
+                const SizedBox(height: 12),
+              ],
+              if (showFounderOffer) ...[
+                _founderOfferCard(theme),
+                const SizedBox(height: 12),
+              ],
+              if (!isBrandNew) ...[
+                _journeyCard(theme),
+                const SizedBox(height: 12),
+              ],
+              if (showPrecision) ...[
+                _precisionModeCard(theme),
+                const SizedBox(height: 4),
+              ],
               const SizedBox(height: 12),
-              _precisionModeCard(theme),
-              const SizedBox(height: 16),
               Text('Trilha 1 — Saia do inglês mudo',
                   style: theme.textTheme.titleMedium),
               Text('Inglês que você já conhece',

@@ -13,6 +13,7 @@ import 'package:method484/screens/word_memory_screen.dart';
 import 'package:method484/services/feedback_messages.dart';
 import 'package:method484/services/analytics_service.dart';
 import 'package:method484/services/entitlement_service.dart';
+import 'package:method484/services/pricing.dart';
 import 'package:method484/services/progress_store.dart';
 import 'package:method484/services/pronunciation_assessor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -129,9 +130,53 @@ void main() {
     // #9: a próxima ação nomeia o treino e a micro-habilidade (foco).
     expect(find.textContaining('foco: ${licao01.microSkill}'),
         findsOneWidget);
-    // #10: "Modo desafio" foi renomeado.
+    // Priorização: "Modo precisão" só aparece depois de 30min aprovados —
+    // com 20s aqui ele fica escondido (staging coberto em teste próprio).
+    expect(find.text('Modo precisão'), findsNothing);
+  });
+
+  testWidgets('priorização: dashboard do dia 0 é enxuta (só ação + trilha)',
+      (tester) async {
+    final store = await _emptyStore(); // zero prática = usuário novo
+    tester.view.physicalSize = const Size(1200, 6000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(
+      home: HomeScreen(
+        store: store,
+        entitlement: await LocalEntitlementService.load(),
+        assessor: _FakeAssessor(),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    // O caminho único: próxima ação + a trilha de lições.
+    expect(find.textContaining('Próxima melhor ação'), findsOneWidget);
+    expect(find.textContaining('Trilha 1 — Saia do inglês mudo'),
+        findsOneWidget);
+    // Medidores e ofertas secundárias NÃO aparecem no dia 0.
+    expect(find.textContaining('Meta de hoje'), findsNothing);
+    expect(find.textContaining('Jornada 484h'), findsNothing);
+    expect(find.textContaining('Desafio de 21 dias'), findsNothing);
+    expect(find.text('Modo precisão'), findsNothing);
+  });
+
+  testWidgets('priorização: Modo precisão aparece após 30min aprovados',
+      (tester) async {
+    final store = await _emptyStore();
+    await store.addApproved(const Duration(minutes: 31)); // passa dos 30min
+    tester.view.physicalSize = const Size(1200, 6000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(
+      home: HomeScreen(
+        store: store,
+        entitlement: await LocalEntitlementService.load(),
+        assessor: _FakeAssessor(),
+      ),
+    ));
+    await tester.pumpAndSettle();
     expect(find.text('Modo precisão'), findsOneWidget);
-    expect(find.textContaining('Modo desafio'), findsNothing);
+    expect(find.textContaining('Modo desafio'), findsNothing); // renomeado
   });
 
   testWidgets('onboarding só libera após consentimento de voz',
@@ -279,6 +324,85 @@ void main() {
 
   test('regra de produto: todas as lições estão grátis por enquanto', () {
     expect(kFreeLessonCount, fase1Lessons.length);
+  });
+
+  test('teste de preço (WTP): variante é válida, estável e persiste', () async {
+    final store = await _emptyStore();
+    final v = store.assignedPriceVariant();
+    // Variante sorteada é uma das em teste.
+    expect(kPriceVariants.map((e) => e.bucket), contains(v.bucket));
+    // ESTÁVEL na mesma sessão — senão a conversão por preço vira ruído.
+    expect(store.assignedPriceVariant().bucket, v.bucket);
+    // E cross-sessão: a mesma pessoa vê sempre o mesmo preço.
+    final store2 = await ProgressStore.load();
+    expect(store2.assignedPriceVariant().bucket, v.bucket);
+  });
+
+  test('desafio 21 dias: começa parado, conta o dia e libera o final',
+      () async {
+    final store = await _emptyStore();
+    // Antes de começar: nada ativo.
+    expect(store.cohortStarted, isFalse);
+    expect(store.cohortDay, 0);
+    expect(store.cohortFinalUnlocked, isFalse);
+    expect(store.cohortBaselineDone, isFalse);
+
+    // Começa hoje com confiança inicial 2 → dia 1, baseline gravado.
+    await store.startCohort(2);
+    expect(store.cohortStarted, isTrue);
+    expect(store.cohortDay, 1);
+    expect(store.baselineConfidence, 2);
+    expect(store.cohortBaselineDone, isTrue);
+    // No dia 1 o final ainda não liberou.
+    expect(store.cohortFinalUnlocked, isFalse);
+    expect(store.cohortFinalDone, isFalse);
+
+    // Persiste cross-sessão.
+    final store2 = await ProgressStore.load();
+    expect(store2.baselineConfidence, 2);
+    expect(store2.cohortDay, 1);
+  });
+
+  test('desafio 21 dias: dia >= 21 libera o final; confiança final persiste',
+      () async {
+    // Início há 21 dias → já está no dia 22 (1-based), final liberado.
+    final start = DateTime.now().subtract(const Duration(days: 21));
+    final ymd = '${start.year}-${start.month.toString().padLeft(2, '0')}-'
+        '${start.day.toString().padLeft(2, '0')}';
+    SharedPreferences.setMockInitialValues({
+      'cohort_start_date': ymd,
+      'cohort_baseline_confidence': 1,
+    });
+    final store = await ProgressStore.load();
+    expect(store.cohortDay, greaterThanOrEqualTo(ProgressStore.cohortLength));
+    expect(store.cohortFinalUnlocked, isTrue);
+
+    await store.setFinalConfidence(4);
+    expect(store.finalConfidence, 4);
+    expect(store.cohortFinalDone, isTrue);
+  });
+
+  test('consentimento de guardar áudio: distinto do de gravar, e persiste',
+      () async {
+    final store = await _emptyStore();
+    // Guardar áudio é base LGPD separada de processar na hora.
+    expect(store.hasVoiceStorageConsent, isFalse);
+    await store.grantVoiceConsent(); // consentir gravar não implica guardar
+    expect(store.hasVoiceStorageConsent, isFalse);
+
+    await store.grantVoiceStorageConsent();
+    expect(store.hasVoiceStorageConsent, isTrue);
+    final store2 = await ProgressStore.load();
+    expect(store2.hasVoiceStorageConsent, isTrue); // cross-sessão
+  });
+
+  test('fake door: flag de e-mail de Fundador começa off e persiste', () async {
+    final store = await _emptyStore();
+    expect(store.hasLeftFounderEmail, isFalse);
+    await store.setLeftFounderEmail();
+    expect(store.hasLeftFounderEmail, isTrue);
+    final store2 = await ProgressStore.load();
+    expect(store2.hasLeftFounderEmail, isTrue); // cross-sessão
   });
 
   test('preferência de tema começa em system e persiste (cross-sessão)',

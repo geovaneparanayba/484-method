@@ -16,6 +16,27 @@ import 'package:record/record.dart';
 /// - [maxDuration] é só um teto de segurança (ruído contínuo, mic aberto);
 /// - gravação que é só silêncio retorna null e não deve ser enviada.
 class AudioRecorderService {
+  /// [maxDuration] é o teto de segurança da gravação; [autoStopOnSilence]
+  /// encerra sozinho após um trecho de silêncio depois da fala.
+  ///
+  /// Default = modo "palavra/chunk" do loop de lição (10s, auto-stop ligado).
+  /// Pra fala aberta longa (gravação de baseline/final do desafio de 21 dias)
+  /// use [AudioRecorderService.longForm]: teto maior e SEM auto-stop por
+  /// silêncio — pausas naturais no meio de uma fala de 30s não podem encerrar.
+  AudioRecorderService({
+    this.maxDuration = const Duration(seconds: 10),
+    this.autoStopOnSilence = true,
+  });
+
+  /// Fala aberta longa: até 60s e o encerramento é manual (ou pelo teto).
+  factory AudioRecorderService.longForm() => AudioRecorderService(
+        maxDuration: const Duration(seconds: 60),
+        autoStopOnSilence: false,
+      );
+
+  final Duration maxDuration;
+  final bool autoStopOnSilence;
+
   final AudioRecorder _recorder = AudioRecorder();
   final BytesBuilder _chunks = BytesBuilder(copy: false);
   StreamSubscription<Uint8List>? _subscription;
@@ -24,7 +45,6 @@ class AudioRecorderService {
   bool? _liveIsFloat32;
 
   static const int sampleRate = 16000;
-  static const Duration maxDuration = Duration(seconds: 10);
 
   /// Silêncio contínuo depois da fala que encerra a gravação sozinha.
   /// Curto o suficiente pra não atrasar palavras isoladas, longo o
@@ -87,6 +107,7 @@ class AudioRecorderService {
     bool isFloat32,
     void Function() onAutoStop,
   ) {
+    if (!autoStopOnSilence) return; // fala aberta: só para no manual/teto
     final rms = _chunkRms(chunk, isFloat32);
     if (kDebugMode) debugPrint('[silence-calibration] rms=${rms.round()}');
     if (rms < _liveSpeechRmsThreshold) return;

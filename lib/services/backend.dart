@@ -44,6 +44,43 @@ class Backend {
 
   String? get userId => client.auth.currentUser?.id;
 
+  /// Bucket privado das gravações de fala aberta do desafio de 21 dias
+  /// (baseline/final), pro antes/depois com rating cego. RLS: cada usuário só
+  /// acessa a própria pasta {uid}/. Ver migração cohort_recordings_storage.
+  static const _cohortBucket = 'cohort-recordings';
+
+  /// Sobe a gravação (baseline/final) pro Storage e registra os metadados.
+  /// Best-effort: qualquer falha retorna false e o app segue — o áudio é um
+  /// artefato de validação, não a métrica norte. Objeto em {uid}/{kind}-{ts}.wav.
+  Future<bool> uploadCohortRecording({
+    required String kind,
+    required Uint8List wavBytes,
+    required int durationMs,
+    required int cohortDay,
+  }) async {
+    final uid = userId;
+    if (uid == null) return false;
+    try {
+      final path = '$uid/$kind-${DateTime.now().millisecondsSinceEpoch}.wav';
+      await client.storage.from(_cohortBucket).uploadBinary(
+            path,
+            wavBytes,
+            fileOptions: const FileOptions(contentType: 'audio/wav'),
+          );
+      await client.from('cohort_recordings').insert({
+        'user_id': uid,
+        'kind': kind,
+        'storage_path': path,
+        'duration_ms': durationMs,
+        'cohort_day': cohortDay,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('[backend] uploadCohortRecording falhou: $e');
+      return false;
+    }
+  }
+
   Future<void> pushProgress(Map<String, dynamic> snapshot) async {
     final uid = userId;
     if (uid == null) return;
@@ -91,12 +128,31 @@ class Backend {
     }
   }
 
-  /// LGPD: apaga os dados remotos do usuário (progresso + eventos). Chamado
-  /// pela exclusão de dados do app, fechando o ciclo "apagar = some de tudo".
-  /// Falha silenciosa não impede a limpeza local (fonte de verdade da UI).
+  /// LGPD: apaga os dados remotos do usuário (progresso + eventos + gravações
+  /// do desafio). Chamado pela exclusão de dados do app, fechando o ciclo
+  /// "apagar = some de tudo". Falha silenciosa não impede a limpeza local
+  /// (fonte de verdade da UI).
   Future<void> deleteRemoteData() async {
     final uid = userId;
     if (uid == null) return;
+    // Gravações do desafio (Storage + metadados) num bloco PRÓPRIO: uma falha
+    // aqui (ex.: Storage fora do ar) não pode impedir a exclusão de
+    // progresso/eventos, que é o núcleo do direito de apagamento.
+    try {
+      final recs = await client
+          .from('cohort_recordings')
+          .select('storage_path')
+          .eq('user_id', uid);
+      final paths = [
+        for (final r in (recs as List)) r['storage_path'] as String,
+      ];
+      if (paths.isNotEmpty) {
+        await client.storage.from(_cohortBucket).remove(paths);
+      }
+      await client.from('cohort_recordings').delete().eq('user_id', uid);
+    } catch (e) {
+      debugPrint('[backend] deleteRemoteData (gravações) falhou: $e');
+    }
     try {
       await client.from('events').delete().eq('user_id', uid);
       await client.from('progress').delete().eq('user_id', uid);
@@ -119,6 +175,43 @@ class Backend {
       throw Exception('Painel indisponível (código ${res.status}).');
     }
     return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  /// Rating cego: lista as gravações do desafio (baseline/final) com URLs
+  /// ASSINADAS geradas pela Edge Function `dev-stats` (service role assina o
+  /// bucket privado), atrás do mesmo gate de senha do painel. Cada item traz
+  /// url, kind, duration_ms e a nota já dada (score/note), se houver.
+  Future<List<Map<String, dynamic>>> fetchCohortRecordings(
+      String password) async {
+    final res = await client.functions.invoke(
+      'dev-stats',
+      body: {'password': password, 'action': 'list_recordings'},
+    );
+    if (res.status == 401) throw const DevStatsAuthException();
+    if (res.status != 200) {
+      throw Exception('Falha ao carregar gravações (código ${res.status}).');
+    }
+    final data = res.data;
+    final list = (data is Map ? data['recordings'] : null) as List?;
+    return (list ?? const []).cast<Map<String, dynamic>>();
+  }
+
+  /// Rating cego: grava/atualiza a nota (1–5) de uma gravação. Passa pela
+  /// mesma Edge Function/gate de senha; a tabela cohort_ratings não tem policy
+  /// de cliente (só a service role escreve).
+  Future<void> saveCohortRating(
+      String password, String recordingId, int score, String? note) async {
+    final res = await client.functions.invoke('dev-stats', body: {
+      'password': password,
+      'action': 'rate',
+      'recording_id': recordingId,
+      'score': score,
+      if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+    });
+    if (res.status == 401) throw const DevStatsAuthException();
+    if (res.status != 200) {
+      throw Exception('Falha ao salvar a nota (código ${res.status}).');
+    }
   }
 
   /// Liga/desliga global do app (app_config/'maintenance'), checado no boot.
